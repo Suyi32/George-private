@@ -232,14 +232,6 @@ class PolicyGradient:
     def learn_ppo (self, epoch_i, entropy_weight, IfPrint=False):
         discounted_ep_rs_norm = -self._discount_and_norm_safety()
 
-        # self.train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
-        # self.ppo_past_chosen_action_log_probs = self.sess.run(self.chosen_action_log_probs, feed_dict={
-        #                     self.tf_obs: np.vstack(self.ep_obs), 
-        #                     self.tf_acts: np.array(self.ep_as),
-        #                     self.tf_vt: discounted_ep_rs_norm, 
-        #                     self.entropy_weight: entropy_weight,
-        #                     # self.tf_safe: np.array(self.ep_ss)
-        #                     self.tf_safe: self._discount_and_norm_safety()})  # used in safe_loss
         if self.ppo_sample_counter == 0:
             self.ppo_old_params = self.sess.run(self.flat_params_op)
             
@@ -330,57 +322,18 @@ class PolicyGradient:
       
 
         ##### Suyi's Change PPO #####
-        # old_all_act_prob = np.array(self.sess.run([self.all_act_prob], self.feed_dict))
-        # old_all_act_prob = np.squeeze(old_all_act_prob, axis=0) 
-
-        # g_ppo = self.sess.run(
-        #     [self.ppoloss_flat_gradients_op],
-        #     self.feed_dict
-        #     )
-        # g_ppo = np.array(g_ppo).reshape(-1)
-        # r_theta = np.mean(np.amax(old_all_act_prob, axis=1)/ np.exp(chosen_action_log_probs))
-        # clip_eps = 0.2
-
-        # first_term = r_theta * discounted_ep_rs_norm
-        # second_term = np.clip(r_theta, a_min =1.0 - clip_eps, a_max = 1 + clip_eps) * discounted_ep_rs_norm
-        # discounted_ep_rs_norm = np.minimum(first_term,second_term)
-        # self.feed_dict[self.tf_vt] = discounted_ep_rs_norm
-
         b, old_all_act_prob, old_params  = self.sess.run(
             [self.constraint_flat_gradients_op,
              self.all_act_prob,
              self.flat_params_op],
             self.feed_dict)
-
         ##### Suyi's Change PPO #####
-
-        # g, b, old_all_act_prob, old_params, old_safety_loss = self.sess.run(
-        #     [self.loss_flat_gradients_op,
-        #      self.constraint_flat_gradients_op,
-        #      self.all_act_prob,
-        #      self.flat_params_op,
-        #      self.average_safety_loss],
-        #     self.feed_dict)
-
-        # print("g", np.array(g).shape, type(g))
-        # print("g_ppo", np.array(g_ppo).shape, type(g_ppo))
-        # print("old_params", old_params.shape) # shape (7299,)
-        # exit(0)
 
         # kl diveregnce
         self.feed_dict[self.old_all_act_prob] = old_all_act_prob
 
-        # # math
-        # v = do_conjugate_gradient(self.get_fisher_product, g)  # x = A-1g
-        # # H_b = doConjugateGradient(self.getFisherProduct, b)
-        # approx_g = self.get_fisher_product(v)  # g = Ax = AA-1g
-        # # b = self.getFisherProduct(H_b)
-        # safety_constraint = self.safety_requirement - np.mean(self.safe_batch)
-        # linear_constraint_threshold = np.maximum(0, safety_constraint) + old_safety_loss
         eps = 1e-8
-        # delta = 2 * self.desired_kl
-        # c = -safety_constraint
-        # q = np.dot(approx_g, v)
+
 
         ##### Suyi's Change  PPPO #####
         safety_constraint = self.safety_requirement - np.mean(self.safe_batch)
@@ -394,106 +347,8 @@ class PolicyGradient:
             w = norm_b * do_conjugate_gradient(self.get_fisher_product, unit_b)
             s = np.dot(w, self.get_fisher_product(w))
         ##### Suyi's Change  PPPO #####
-
-        # if (np.dot(b, b) < eps):
-        #     lam = np.sqrt(q / delta)
-        #     nu = 0
-        #     w = 0
-        #     r, s, A, B = 0, 0, 0, 0
-        #     optim_case = 4
-        # else:
-        #     norm_b = np.sqrt(np.dot(b, b))
-        #     unit_b = b / norm_b
-        #     w = norm_b * do_conjugate_gradient(self.get_fisher_product, unit_b)
-        #     r = np.dot(w, approx_g)
-        #     s = np.dot(w, self.get_fisher_product(w))
-        #     A = q - (r ** 2 / s)
-        #     B = delta - (c ** 2 / s)
-        #     if (c < 0 and B < 0):
-        #         optim_case = 3
-        #     elif (c < 0 and B > 0):
-        #         optim_case = 2
-        #     elif (c > 0 and B > 0):
-        #         optim_case = 1
-        #     else:
-        #         optim_case = 0
-        #         # return self.learn_vio(epoch_i, entropy_weight, Ifprint)
-        #     lam = np.sqrt(q / delta)
-        #     nu = 0
-
-            # if (optim_case == 2 or optim_case == 1):
-            #     lam_mid = r / c
-            #     L_mid = - 0.5 * (q / lam_mid + lam_mid * delta)
-
-            #     lam_a = np.sqrt(A / (B + eps))
-            #     L_a = -np.sqrt(A * B) - r * c / (s + eps)
-
-            #     lam_b = np.sqrt(q / delta)
-            #     L_b = -np.sqrt(q * delta)
-
-            #     if lam_mid > 0:
-            #         if c < 0:
-            #             if lam_a > lam_mid:
-            #                 lam_a = lam_mid
-            #                 L_a = L_mid
-            #             if lam_b < lam_mid:
-            #                 lam_b = lam_mid
-            #                 L_b = L_mid
-            #         else:
-            #             if lam_a < lam_mid:
-            #                 lam_a = lam_mid
-            #                 L_a = L_mid
-            #             if lam_b > lam_mid:
-            #                 lam_b = lam_mid
-            #                 L_b = L_mid
-
-            #         if L_a >= L_b:
-            #             lam = lam_a
-            #         else:
-            #             lam = lam_b
-
-            #     else:
-            #         if c < 0:
-            #             lam = lam_b
-            #         else:
-            #             lam = lam_a
-
-            #     nu = max(0, lam * c - r) / (s + eps)
-
-        '''
-        np.sqrt(delta / (s + eps)) * w
-        ### CPO policy update ###
-        if optim_case > 0:
-            full_step = (1. / (lam + eps)) * (v + nu * w)
-
-        else:
-            full_step = np.sqrt(delta / (s + eps)) * w
-        # print("optim_case: %f" %(optim_case))
-
-        if (optim_case == 0 or optim_case == 1):
-            new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = do_line_search_CPO(self.get_metrics, old_params, full_step, self.desired_kl, linear_constraint_threshold, check_loss=False)
-        else:
-            new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = do_line_search_CPO(self.get_metrics, old_params, full_step, self.desired_kl, linear_constraint_threshold)
-        '''
-
-        # print("Optimal case before PCPO:", optim_case)
-        # if isinstance(b, np.ndarray):
-        #     print("b", b.shape, type(b))
-        # else:
-        #     print("b not ndarray", b, type(b))
-        # if isinstance(s, np.ndarray):
-        #     print("s", s.shape, type(s))
-        # else:
-        #     print("s not ndarray", s, type(s))
-        # if isinstance(w, np.ndarray):
-        #     print("w", w.shape, type(w))
-        # else:
-        #     print("w not ndarray", w, type(w)) 
-        # b (7299,) <class 'numpy.ndarray'>
-        # s not ndarray 0.0 <class 'numpy.float32'>
-        # w (7299,) <class 'numpy.ndarray'>
         
-        ####################### PCPO modified the policy update direction BEGIN #######################
+        ####################### PPPO modified the policy update direction BEGIN #######################
         c_scale = 0.0
         #beta_soft = 0.5 # 1.0 default/0.5 used/0.1 used/0.01 used
         optim_case = 0.0 # to be deleted
@@ -505,15 +360,10 @@ class PolicyGradient:
 
         # if optim_case >= 0:
         if optim_case >= 0: # Suyi's change
-            # flat_descent_step_tr = np.sqrt(delta / (q + eps)) * v # sqrt(2 * delta / g^t H^{-1} g) H^{-1} g
             ##### PPO change #####
-            flat_descent_step_tr = 0.0
             self.learn_ppo(epoch_i, entropy_weight, Ifprint)
             cur_params = self.sess.run(self.flat_params_op) 
-            flat_descent_step = max(0, (b.T @ (cur_params - old_params) + c)/(s + eps)  ) * w
-            # print("flat_descent_step", flat_descent_step, np.sum(flat_descent_step))
-
-            
+            flat_descent_step = max(0, (b.T @ (cur_params - old_params) + c)/(s + eps)  ) * w  # Projection update
 
             ##### Normalization #####
             flat_descent_step_lr = 1.0
@@ -532,22 +382,6 @@ class PolicyGradient:
             new_params = cur_params - flat_descent_step_lr * unit_flat_descent_step
             # new_params = cur_params - (flat_descent_step_lr/(np.sqrt(self.grad_squared)+eps)) * flat_descent_step
             self.sess.run(self.params_assign_op, feed_dict={self.new_params: new_params})
-            # check the Lagrangian multipiler of the projected gradient descent
-            #lam_pg = max(0, np.sqrt(delta / (q + eps)) * r + c + c_scale) / (flat_b.dot(flat_b) + eps) 
-            # projected gradient descent
-            #flat_descent_step_pg = lam_pg * flat_b
-
-            # # This Lagrangian multipiler is derived from using KL projection
-            # lam_pg = max(0, np.sqrt(delta / (q + eps)) * r + c + c_scale) / (s + eps)
-
-            # # KL projected gradient descent
-            # flat_descent_step_pg_KL = lam_pg * w
-
-            # print("flat_descent_step_pg_KL", flat_descent_step_pg_KL, flat_descent_step_pg_KL.shape, type(flat_descent_step_pg_KL))
-            # print("np.sqrt(delta / (q + eps)) * r + c + c_scale", np.sqrt(delta / (q + eps)) * r + c + c_scale)
-            # print("params", old_params, old_params.shape)
-            # # combine these two directions
-            # flat_descent_step = flat_descent_step_tr + beta_soft * flat_descent_step_pg_KL
 
             # This is used to remove the line search procedure
             optim_case = -1 # Suyi' change
@@ -555,42 +389,6 @@ class PolicyGradient:
             # when infeasible, take the step that purly decreases the constrained value
             flat_descent_step = np.sqrt(delta / (s + eps)) * w
             optim_case = -2 # Suyi' change
-
-        # This is used to remove the line search procedure
-        # optim_case = -1   Suyi' change
-
-        ## Replacing line search
-        def pcpo_update(f, old_params, full_step, desired_kl_divergence, linear_constraint_threshold):
-            old_loss, old_kl_divergence, old_safety_loss, entro_old = f(old_params)
-
-            new_params = old_params - full_step
-            new_loss, new_kl_divergence, new_safety_loss, entro = f(new_params)
-
-            if np.isnan(full_step).any():
-                # print("np.isnan(full_step).any(): True")
-                return  old_params, True, new_kl_divergence, new_safety_loss, new_loss, entro
-
-            if np.isnan(new_params).any():
-                # print("np.isnan(new_params).any(): True")
-                return old_params, False, new_kl_divergence, new_safety_loss, new_loss, entro
-            else:
-                # print("np.isnan(new_params).any(): False")
-                return new_params, True, new_kl_divergence, new_safety_loss, new_loss, entro
-
-            return old_params, False, new_kl_divergence, new_safety_loss, new_loss, entro
-
-        # if optim_case == -1 or optim_case == -2:
-        #     new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = pcpo_update(self.get_metrics, cur_params, flat_descent_step, self.desired_kl, linear_constraint_threshold)
-            # new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = pcpo_update(self.get_metrics, old_params, flat_descent_step, self.desired_kl, linear_constraint_threshold)
-
-
-        ####################### PCPO modified the policy update direction END #######################
-
-        # print('Success: ', status, "optim_case:", optim_case)
-
-        # if (status == False):
-        #     self.sess.run(self.params_assign_op, feed_dict={self.new_params: new_params})
-
 
         # _, loss, all_act_prob, entro = self.sess.run([self.train_op, self.loss, self.all_act_prob, self.entro], feed_dict=self.feed_dict)
         # if Ifprint:
