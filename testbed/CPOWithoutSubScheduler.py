@@ -5,7 +5,7 @@ import sys
 sys.path.append("/Users/ourokutaira/Desktop/George")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbed.cluster_env import LraClusterEnv
-from testbed.PolicyGradient_CPO import PolicyGradient
+from testbed.PolicyGradient_PPPO import PolicyGradient
 import argparse
 from testbed.simulator.simulator import Simulator
 
@@ -20,7 +20,7 @@ hyper_parameter = {
         'batch_C_numbers': None
 }
 params = {
-        'batch_size': 50,
+        'batch_size': 200,
         'epochs': 100000,
         'path': "cpo_27_" + str(hyper_parameter['batch_C_numbers']),
         'rec_path': "cpo_separate_unified_replay_level_formal_new100",
@@ -264,9 +264,9 @@ def train(params):
         reward_ratio = (tput - 0)
 
         state = env.state
-        # list_check_per_app = (env.state > 1).sum() + max((env.state - 1).max(), 0)
-        # list_check_sum = sum(env.state.sum(1) > params['container_limitation per node']) + max(max(env.state.sum(1) - params['container_limitation per node']), 0)
-        # list_check_coex = sum((env.state[:, 1] > 0) * (env.state[:, 2] > 0))
+        list_check_per_app = (env.state > 1).sum() + max((env.state - 1).max(), 0)
+        list_check_sum = sum(env.state.sum(1) > params['container_limitation per node']) + max(max(env.state.sum(1) - params['container_limitation per node']), 0)
+        list_check_coex = sum((env.state[:, 1] > 0) * (env.state[:, 2] > 0))
         # list_check = list_check_sum + list_check_coex + list_check_per_app
 
         list_check = 0
