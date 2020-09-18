@@ -2,7 +2,7 @@ import numpy as np
 import time
 import os
 import sys
-sys.path.append("/Users/ourokutaira/Desktop/George")
+sys.path.append("../")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbed.cluster_env import LraClusterEnv
 from testbed.PolicyGradient_PPPO import PolicyGradient
@@ -56,7 +56,7 @@ def train(params):
     nodes_per_group = int(params['nodes per group'])
     replay_size = params['replay size']
     training_times_per_episode = 1  # TODO: if layers changes, training_times_per_episode should be modified
-    safety_requirement = 2.0 / 100.
+    safety_requirement = 2.0 #/ 100.
 
     """
     Build Network
@@ -464,7 +464,6 @@ def train(params):
                         RL_1.ep_as.extend(action_optimal_1)
                         RL_1.ep_ss.extend(safety_optimal_1)
                         RL_1.ep_rs.extend(reward_optimal)
-
 
                         RL_2.ep_obs.extend(observation_optimal_2)
                         RL_2.ep_as.extend(action_optimal_2)
