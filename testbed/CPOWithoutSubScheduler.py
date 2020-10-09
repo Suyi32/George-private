@@ -2,10 +2,10 @@ import numpy as np
 import time
 import os
 import sys
-sys.path.append("/Users/ourokutaira/Desktop/George")
+sys.path.append("../")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbed.cluster_env import LraClusterEnv
-from testbed.PolicyGradient_CPO import PolicyGradient
+from testbed.PolicyGradient_PPPO import PolicyGradient
 import argparse
 from testbed.simulator.simulator import Simulator
 
@@ -20,7 +20,7 @@ hyper_parameter = {
         'batch_C_numbers': None
 }
 params = {
-        'batch_size': 50,
+        'batch_size': 200,
         'epochs': 100000,
         'path': "cpo_27_" + str(hyper_parameter['batch_C_numbers']),
         'rec_path': "cpo_separate_unified_replay_level_formal_new100",
@@ -56,7 +56,7 @@ def train(params):
     nodes_per_group = int(params['nodes per group'])
     replay_size = params['replay size']
     training_times_per_episode = 1  # TODO: if layers changes, training_times_per_episode should be modified
-    safety_requirement = 2.0 / 100.
+    safety_requirement = 2.0 #/ 100.
 
     """
     Build Network
@@ -264,9 +264,9 @@ def train(params):
         reward_ratio = (tput - 0)
 
         state = env.state
-        # list_check_per_app = (env.state > 1).sum() + max((env.state - 1).max(), 0)
-        # list_check_sum = sum(env.state.sum(1) > params['container_limitation per node']) + max(max(env.state.sum(1) - params['container_limitation per node']), 0)
-        # list_check_coex = sum((env.state[:, 1] > 0) * (env.state[:, 2] > 0))
+        list_check_per_app = (env.state > 1).sum() + max((env.state - 1).max(), 0)
+        list_check_sum = sum(env.state.sum(1) > params['container_limitation per node']) + max(max(env.state.sum(1) - params['container_limitation per node']), 0)
+        list_check_coex = sum((env.state[:, 1] > 0) * (env.state[:, 2] > 0))
         # list_check = list_check_sum + list_check_coex + list_check_per_app
 
         list_check = 0
@@ -464,7 +464,6 @@ def train(params):
                         RL_1.ep_as.extend(action_optimal_1)
                         RL_1.ep_ss.extend(safety_optimal_1)
                         RL_1.ep_rs.extend(reward_optimal)
-
 
                         RL_2.ep_obs.extend(observation_optimal_2)
                         RL_2.ep_as.extend(action_optimal_2)
