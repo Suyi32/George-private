@@ -5,7 +5,7 @@ from testbed.util.commons import *
 import numpy as np
 import tensorflow as tf
 import time
-from scheduler import LinearScheduler
+from testbed.scheduler import LinearScheduler
 
 np.random.seed(1)
 tf.set_random_seed(1)
