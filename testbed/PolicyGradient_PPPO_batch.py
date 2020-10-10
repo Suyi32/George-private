@@ -7,7 +7,7 @@ import numpy as np
 
 import tensorflow as tf
 import time
-from scheduler import LinearScheduler
+from testbed.scheduler import LinearScheduler
 
 np.random.seed(1)
 tf.set_random_seed(1)
@@ -285,7 +285,7 @@ class PolicyGradient:
         
         return 5
 
-    def learn_vio (self, epoch_i, entropy_weight, IfPrint=False):
+    def learn_vio(self, epoch_i, entropy_weight, IfPrint=False):
         discounted_ep_rs_norm = -self._discount_and_norm_safety()
 
         for _ in range(1):
@@ -494,11 +494,11 @@ class PolicyGradient:
         # if isinstance(w, np.ndarray):
         #     print("w", w.shape, type(w))
         # else:
-        #     print("w not ndarray", w, type(w)) 
+        #     print("w not ndarray", w, type(w))
         # b (7299,) <class 'numpy.ndarray'>
         # s not ndarray 0.0 <class 'numpy.float32'>
         # w (7299,) <class 'numpy.ndarray'>
-        
+
         ####################### PCPO modified the policy update direction BEGIN #######################
         c_scale = 0.0
         #beta_soft = 0.5 # 1.0 default/0.5 used/0.1 used/0.01 used

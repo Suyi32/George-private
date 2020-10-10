@@ -21,8 +21,8 @@ hyper_parameter = {
 }
 
 params = {
-        'batch_size': 50,
-        'epochs': 50000,
+        'batch_size': 20,
+        'epochs': 15000,
         'path': "pppo_27_fromscratch_" + str(hyper_parameter['container_N']) + "_" + str(hyper_parameter['batch_C_numbers']),
         'path_recover': "cpo_clustering_81nodes_single",
         'recover': False,
@@ -69,9 +69,9 @@ def train(params):
     Recover = False
     nodes_per_group = int(params['nodes per group'])
     replay_size = params['replay size']
-    training_times_per_episode = 1  # TODO: if layers changes, training_times_per_episode should be modified
+    training_times_per_episode = 1
     safety_requirement = 0.02 * hyper_parameter['container_N']
-    ifUseExternal = False
+    ifUseExternal = True
 
     """
     Build Network
@@ -98,7 +98,7 @@ def train(params):
 
     epoch_i = 0
 
-    thre_entropy = 0.01
+    thre_entropy = 0.001
     # TODO: delete this range
 
     names = locals()
@@ -181,7 +181,7 @@ def train(params):
         list_check_ratio = list_check
         safety_episode_1 = [list_check_ratio * 1.0] * len(observation_episode_1)
         reward_episode_1 = [reward_ratio * 1.0] * len(observation_episode_1)
-        RL_1.store_tput_per_episode(tput, epoch_i, list_check, list_check_coex, list_check_sum, time.time()-start_time)
+        RL_1.store_tput_per_episode(tput, epoch_i, list_check, list_check_coex, list_check_sum, list_check_per_app)
         RL_1.store_training_samples_per_episode(observation_episode_1, action_episode_1, reward_episode_1, safety_episode_1)
         """
         check_tput_quality(tput)
@@ -189,38 +189,25 @@ def train(params):
         if list_check <= safety_requirement*0.5:
             if names['highest_tput_' + str(tput_origimal_class)] < tput:
                 names['highest_tput_' + str(tput_origimal_class)] = tput
-
                 names['observation_optimal_1_' + str(tput_origimal_class)], names['action_optimal_1_' + str(tput_origimal_class)], names['observation_optimal_2_' + str(tput_origimal_class)], names['action_optimal_2_' + str(tput_origimal_class)],\
                 names['reward_optimal_1_' + str(tput_origimal_class)],names['reward_optimal_2_' + str(tput_origimal_class)],names['reward_optimal_3_' + str(tput_origimal_class)], \
                 names['number_optimal_' + str(tput_origimal_class)],\
                 names['safety_optimal_1_' + str(tput_origimal_class)],names['safety_optimal_2_' + str(tput_origimal_class)],names['safety_optimal_3_' + str(tput_origimal_class)]\
                     = [], [], [], [], [], [], [], [], [], [], []
                 names['observation_optimal_3_' + str(tput_origimal_class)], names['action_optimal_3_' + str(tput_origimal_class)] = [], []
-
                 names['observation_optimal_1_' + str(tput_origimal_class)].extend(observation_episode_1)
                 names['action_optimal_1_' + str(tput_origimal_class)].extend(action_episode_1)
-
                 names['number_optimal_' + str(tput_origimal_class)].append(NUM_CONTAINERS)
-
                 names['safety_optimal_1_' + str(tput_origimal_class)].extend(safety_episode_1)
-
                 names['reward_optimal_1_' + str(tput_origimal_class)].extend(reward_episode_1)
-
                 names['optimal_range_' + str(tput_origimal_class)] = 1.05
 
             elif names['highest_tput_' + str(tput_origimal_class)] < tput * names['optimal_range_' + str(tput_origimal_class)]:
                 names['observation_optimal_1_' + str(tput_origimal_class)].extend(observation_episode_1)
                 names['action_optimal_1_' + str(tput_origimal_class)].extend(action_episode_1)
-
-
                 names['number_optimal_' + str(tput_origimal_class)].append(NUM_CONTAINERS)
-
                 names['safety_optimal_1_' + str(tput_origimal_class)].extend(safety_episode_1)
-
                 names['reward_optimal_1_' + str(tput_origimal_class)].extend(reward_episode_1)
-
-
-
 
         observation_episode_1, action_episode_1, reward_episode_1, safety_episode_1 = [], [], [], []
 
@@ -231,17 +218,10 @@ def train(params):
             for replay_class in range(0,10):
 
                 number_optimal = names['number_optimal_' + str(replay_class)]
-
                 reward_optimal_1 = names['reward_optimal_1_' + str(replay_class)]
-
                 safety_optimal_1 = names['safety_optimal_1_' + str(replay_class)]
-
-
                 observation_optimal_1 = names['observation_optimal_1_' + str(replay_class)]
                 action_optimal_1 = names['action_optimal_1_' + str(replay_class)]
-
-
-
                 buffer_size = int(len(number_optimal))
 
                 if buffer_size < replay_size:
@@ -250,8 +230,6 @@ def train(params):
                     RL_1.ep_as.extend(action_optimal_1)
                     RL_1.ep_rs.extend(reward_optimal_1)
                     RL_1.ep_ss.extend(safety_optimal_1)
-
-
 
                 else:
                     replay_index = np.random.choice(range(buffer_size), size=replay_size, replace=False)
@@ -303,7 +281,7 @@ def train(params):
             thre_entropy = max(thre_entropy, 0.001)
 
         epoch_i += 1
-        if epoch_i>3:
+        if epoch_i>5:
             ifUseExternal = False
 
 
@@ -358,6 +336,7 @@ def draw_graph_single(params):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
 
 def make_path(dirname):
 
