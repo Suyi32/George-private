@@ -4,7 +4,7 @@ import os
 import sys
 # sys.path.append("/home/ubuntu/lra_scheduling_simulation/Simulation_Python")
 sys.path.append("/home/lpwangthu/cpo")
-sys.path.append("/home/ubuntu/atc")
+sys.path.append("../")
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbed.cluster_env import LraClusterEnv
