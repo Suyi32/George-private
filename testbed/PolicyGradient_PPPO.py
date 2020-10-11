@@ -5,7 +5,7 @@ from testbed.util.commons import *
 import numpy as np
 import tensorflow as tf
 import time
-from scheduler import LinearScheduler
+from testbed.scheduler import LinearScheduler
 
 np.random.seed(1)
 tf.set_random_seed(1)
@@ -230,7 +230,7 @@ class PolicyGradient:
         self.ss_sum_persisit.append(list_check_sum)
 
     def learn_ppo (self, epoch_i, entropy_weight, IfPrint=False):
-        discounted_ep_rs_norm = -self._discount_and_norm_safety()
+        discounted_ep_rs_norm = self._discount_and_norm_rewards()
 
         if self.ppo_sample_counter == 0:
             self.ppo_old_params = self.sess.run(self.flat_params_op)
@@ -295,13 +295,13 @@ class PolicyGradient:
 
     def learn(self, epoch_i, entropy_weight, Ifprint=False):
 
-        if np.mean(self.safe_batch) < 0.5*self.safety_requirement:
+        if np.mean(self.safe_batch) < 1.0 * self.safety_requirement:
             self.count += 1
         else:
             self.count = 0
         # if self.count > 5:
         #     self.start_cpo = True   
-        if self.count > 20:
+        if self.count > 10:
             self.start_cpo = True
         # self.start_cpo = True
         if not self.start_cpo:

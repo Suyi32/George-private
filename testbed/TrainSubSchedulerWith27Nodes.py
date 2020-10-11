@@ -6,7 +6,7 @@ import sys
 sys.path.append("/Users/ourokutaira/Desktop/George")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbed.cluster_env import LraClusterEnv
-from testbed.PolicyGradient_CPO import PolicyGradient
+from testbed.PolicyGradient_PPPO_batch import PolicyGradient
 import argparse
 from testbed.simulator.simulator import Simulator
 

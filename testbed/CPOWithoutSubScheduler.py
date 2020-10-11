@@ -20,7 +20,7 @@ hyper_parameter = {
         'batch_C_numbers': None
 }
 params = {
-        'batch_size': 200,
+        'batch_size': 50,
         'epochs': 100000,
         'path': "cpo_27_" + str(hyper_parameter['batch_C_numbers']),
         'rec_path': "cpo_separate_unified_replay_level_formal_new100",
@@ -503,7 +503,7 @@ def train(params):
         """
         checkpoint, per 1000 episodes
         """
-        if (epoch_i % 3000 == 0) & (epoch_i > 1):
+        if (epoch_i % 1000 == 0) & (epoch_i > 1):
 
             RL_1.save_session(ckpt_path_1)
             RL_2.save_session(ckpt_path_2)
@@ -541,7 +541,7 @@ def train(params):
             thre_entropy = max(thre_entropy, 0.0001)
 
         epoch_i += 1
-        if epoch_i > 20000:
+        if epoch_i > 10000:
             batch_size = 200
 
 
