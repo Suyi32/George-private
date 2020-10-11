@@ -293,7 +293,7 @@ class PolicyGradient:
 
     def learn(self, epoch_i, entropy_weight, Ifprint=False):
 
-        if np.mean(self.ep_ss) < 0.5*self.safety_requirement:
+        if np.mean(self.ep_ss) < self.safety_requirement:
             self.count += 1
         else:
             self.count = 0
@@ -424,10 +424,10 @@ class PolicyGradient:
         else:
             beta_soft = 1.0
 
-        # if optim_case >= 0:
-        if optim_case > 0: # Suyi's change
-            self.learn_ppo(epoch_i, entropy_weight, Ifprint)
+        if optim_case > 0:
             old_params = self.sess.run(self.flat_params_op)
+            self.learn_ppo(epoch_i, entropy_weight, Ifprint)
+            cur_params = self.sess.run(self.flat_params_op)
 
             # flat_descent_step_tr = np.sqrt(delta / (q + eps)) * v # sqrt(2 * delta / g^t H^{-1} g) H^{-1} g
 
@@ -437,7 +437,8 @@ class PolicyGradient:
             #flat_descent_step_pg = lam_pg * flat_b
 
             # This Lagrangian multipiler is derived from using KL projection
-            lam_pg = max(0, np.sqrt(delta / (q + eps)) * r + c + c_scale) / (s + eps)
+            # lam_pg = max(0, np.sqrt(delta / (q + eps)) * r + c + c_scale) / (s + eps)
+            lam_pg = max(0, b.T @ (cur_params - old_params) + c + c_scale) / (s + eps)
 
             # KL projected gradient descent
             flat_descent_step_pg_KL = lam_pg * w
@@ -449,6 +450,7 @@ class PolicyGradient:
             # This is used to remove the line search procedure
             optim_case = -1 # Suyi' change
         else:
+            cur_params = self.sess.run(self.flat_params_op)
             # when infeasible, take the step that purly decreases the constrained value
             flat_descent_step = np.sqrt(delta / (s + eps)) * w
             optim_case = -2 # Suyi' change
@@ -474,8 +476,8 @@ class PolicyGradient:
             return old_params, False, new_kl_divergence, new_safety_loss, new_loss, entro
 
         if optim_case == -1 or optim_case == -2:
-            new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = pcpo_update(self.get_metrics, old_params, flat_descent_step, self.desired_kl, linear_constraint_threshold)
-
+            # new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = pcpo_update(self.get_metrics, old_params, flat_descent_step, self.desired_kl, linear_constraint_threshold)
+            new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = pcpo_update(self.get_metrics, cur_params, flat_descent_step, self.desired_kl, linear_constraint_threshold)
         ####################### PCPO modified the policy update direction END #######################
 
         print('Success: ', status, "optim_case:", optim_case)
