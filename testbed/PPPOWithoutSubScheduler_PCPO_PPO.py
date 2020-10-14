@@ -472,22 +472,39 @@ def train(params):
                     buffer_size = int(len(number_optimal))
 
                     if buffer_size < replay_size:
-                        # TODO: if layers changes, training_times_per_episode should be modified
-                        RL_1.ep_obs.extend(observation_optimal_1)
-                        RL_1.ep_as.extend(action_optimal_1)
-                        RL_1.ep_ss.extend(safety_optimal_1)
-                        RL_1.ep_rs.extend(reward_optimal)
+                        if buffer_size<20:
+                            for _ in range(3):
+                                RL_1.ep_obs.extend(observation_optimal_1)
+                                RL_1.ep_as.extend(action_optimal_1)
+                                RL_1.ep_ss.extend(safety_optimal_1)
+                                RL_1.ep_rs.extend(reward_optimal)
+
+                                RL_2.ep_obs.extend(observation_optimal_2)
+                                RL_2.ep_as.extend(action_optimal_2)
+                                RL_2.ep_rs.extend(reward_optimal)
+                                RL_2.ep_ss.extend(safety_optimal_2)
+
+                                RL_3.ep_obs.extend(observation_optimal_3)
+                                RL_3.ep_as.extend(action_optimal_3)
+                                RL_3.ep_rs.extend(reward_optimal)
+                                RL_3.ep_ss.extend(safety_optimal_3)
+                        else:
+
+                            RL_1.ep_obs.extend(observation_optimal_1)
+                            RL_1.ep_as.extend(action_optimal_1)
+                            RL_1.ep_ss.extend(safety_optimal_1)
+                            RL_1.ep_rs.extend(reward_optimal)
 
 
-                        RL_2.ep_obs.extend(observation_optimal_2)
-                        RL_2.ep_as.extend(action_optimal_2)
-                        RL_2.ep_rs.extend(reward_optimal)
-                        RL_2.ep_ss.extend(safety_optimal_2)
+                            RL_2.ep_obs.extend(observation_optimal_2)
+                            RL_2.ep_as.extend(action_optimal_2)
+                            RL_2.ep_rs.extend(reward_optimal)
+                            RL_2.ep_ss.extend(safety_optimal_2)
 
-                        RL_3.ep_obs.extend(observation_optimal_3)
-                        RL_3.ep_as.extend(action_optimal_3)
-                        RL_3.ep_rs.extend(reward_optimal)
-                        RL_3.ep_ss.extend(safety_optimal_3)
+                            RL_3.ep_obs.extend(observation_optimal_3)
+                            RL_3.ep_as.extend(action_optimal_3)
+                            RL_3.ep_rs.extend(reward_optimal)
+                            RL_3.ep_ss.extend(safety_optimal_3)
 
                     else:
                         replay_index = np.random.choice(range(buffer_size), size=replay_size, replace=False)
