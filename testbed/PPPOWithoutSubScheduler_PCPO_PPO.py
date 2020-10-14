@@ -610,7 +610,7 @@ def main():
     params['path'] = "pppo1006_27_" + str(hyper_parameter['batch_C_numbers'])
 
     params['batch_size'] = args.batch_size_tunning
-    params['epochs'] = params['epochs'] * (params['batch_size'] / 50)
+    # params['epochs'] = params['epochs'] * (params['batch_size'] / 50)
     params['clip_eps'] = args.clip_eps
     params['safety_requirement'] = args.safety_requirement
     params['recover'] = args.recover
