@@ -27,8 +27,8 @@ params = {
         'batch_size': 30,
         # 'epochs': 100000,
         'epochs': 50000,
-        'path': "pcpo_27_" + str(hyper_parameter['batch_C_numbers']),
-        'rec_path': "pcpo_separate_unified_replay_level_formal_new100",
+        'path': "pppo_27_" + str(hyper_parameter['batch_C_numbers']),
+        'rec_path': "pppo_separate_unified_replay_level_formal_new100",
         'recover': False,
         'learning rate': 0.01,
         'nodes per group': 3,
@@ -598,7 +598,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_choice', type=int)
     parser.add_argument('--clip_eps', type=float, default=0.2)
-    parser.add_argument('--batch_size_tunning', type=int, default=50)
+    parser.add_argument('--batch_size_tunning', type=int, default=30)
     parser.add_argument('--rp_size', type=int, default=100)
     parser.add_argument('--safety_requirement', type=float, default=100)
     parser.add_argument('--recover', action='store_true')
