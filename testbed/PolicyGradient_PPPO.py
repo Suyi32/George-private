@@ -309,7 +309,6 @@ class PolicyGradient:
             # print("self.count",self.count, "np.mean(self.safe_batch)", np.mean(self.safe_batch), "self.start_cpo", self.start_cpo)
             # return self.learn_ppo(epoch_i, entropy_weight, Ifprint)
 
-
         discounted_ep_rs_norm = self._discount_and_norm_rewards()
 
         self.feed_dict = {self.tf_obs: np.vstack(self.ep_obs), self.tf_acts: np.array(self.ep_as),

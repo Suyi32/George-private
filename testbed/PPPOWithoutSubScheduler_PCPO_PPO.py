@@ -24,7 +24,7 @@ hyper_parameter = {
         'batch_C_numbers': None
 }
 params = {
-        'batch_size': 50,
+        'batch_size': 30,
         # 'epochs': 100000,
         'epochs': 50000,
         'path': "pcpo_27_" + str(hyper_parameter['batch_C_numbers']),
@@ -557,8 +557,8 @@ def train(params):
             thre_entropy = max(thre_entropy, 0.0001)
 
         epoch_i += 1
-        if epoch_i > 20000:
-            batch_size = 200
+        if epoch_i > 10000:
+            batch_size = 100
 
 
 def batch_data(NUM_CONTAINERS, NUM_NODES):
