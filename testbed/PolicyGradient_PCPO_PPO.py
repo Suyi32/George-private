@@ -37,7 +37,7 @@ class PolicyGradient:
         self.n_features = n_features
         self.lr = learning_rate
         print("learning rate: {}".format(self.lr))
-        self.pg_lr = 0.005
+        self.pg_lr = 0.01
         self.suffix = suffix
 
         self.safety_requirement = safety_requirement

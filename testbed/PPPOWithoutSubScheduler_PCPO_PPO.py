@@ -24,7 +24,7 @@ hyper_parameter = {
         'batch_C_numbers': None
 }
 params = {
-        'batch_size': 30,
+        'batch_size': 20,
         # 'epochs': 100000,
         'epochs': 50000,
         'path': "pppo_27_" + str(hyper_parameter['batch_C_numbers']),
@@ -598,7 +598,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_choice', type=int)
     parser.add_argument('--clip_eps', type=float, default=0.2)
-    parser.add_argument('--batch_size_tunning', type=int, default=30)
+    parser.add_argument('--batch_size_tunning', type=int, default=20)
     parser.add_argument('--rp_size', type=int, default=100)
     parser.add_argument('--safety_requirement', type=float, default=100)
     parser.add_argument('--recover', action='store_true')
