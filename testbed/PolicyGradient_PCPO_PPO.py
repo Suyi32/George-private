@@ -276,7 +276,7 @@ class PolicyGradient:
     def learn_vio (self, epoch_i, entropy_weight, IfPrint=False):
         discounted_ep_rs_norm = -self._discount_and_norm_safety()
 
-        for _ in range(1):
+        for _ in range(2):
             _, loss, all_act_prob, entropy = self.sess.run([self.train_op, self.loss, self.all_act_prob, self.entro], feed_dict={
                 self.tf_obs: np.vstack(self.ep_obs),
                 self.tf_acts: np.array(self.ep_as),
