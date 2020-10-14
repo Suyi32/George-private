@@ -24,7 +24,7 @@ hyper_parameter = {
         'batch_C_numbers': None
 }
 params = {
-        'batch_size': 50,
+        'batch_size': 20,
         # 'epochs': 100000,
         'epochs': 50000,
         'path': "pppo_27_" + str(hyper_parameter['batch_C_numbers']),
@@ -472,39 +472,22 @@ def train(params):
                     buffer_size = int(len(number_optimal))
 
                     if buffer_size < replay_size:
-                        if buffer_size<20:
-                            for _ in range(3):
-                                RL_1.ep_obs.extend(observation_optimal_1)
-                                RL_1.ep_as.extend(action_optimal_1)
-                                RL_1.ep_ss.extend(safety_optimal_1)
-                                RL_1.ep_rs.extend(reward_optimal)
-
-                                RL_2.ep_obs.extend(observation_optimal_2)
-                                RL_2.ep_as.extend(action_optimal_2)
-                                RL_2.ep_rs.extend(reward_optimal)
-                                RL_2.ep_ss.extend(safety_optimal_2)
-
-                                RL_3.ep_obs.extend(observation_optimal_3)
-                                RL_3.ep_as.extend(action_optimal_3)
-                                RL_3.ep_rs.extend(reward_optimal)
-                                RL_3.ep_ss.extend(safety_optimal_3)
-                        else:
-
-                            RL_1.ep_obs.extend(observation_optimal_1)
-                            RL_1.ep_as.extend(action_optimal_1)
-                            RL_1.ep_ss.extend(safety_optimal_1)
-                            RL_1.ep_rs.extend(reward_optimal)
+                        # TODO: if layers changes, training_times_per_episode should be modified
+                        RL_1.ep_obs.extend(observation_optimal_1)
+                        RL_1.ep_as.extend(action_optimal_1)
+                        RL_1.ep_ss.extend(safety_optimal_1)
+                        RL_1.ep_rs.extend(reward_optimal)
 
 
-                            RL_2.ep_obs.extend(observation_optimal_2)
-                            RL_2.ep_as.extend(action_optimal_2)
-                            RL_2.ep_rs.extend(reward_optimal)
-                            RL_2.ep_ss.extend(safety_optimal_2)
+                        RL_2.ep_obs.extend(observation_optimal_2)
+                        RL_2.ep_as.extend(action_optimal_2)
+                        RL_2.ep_rs.extend(reward_optimal)
+                        RL_2.ep_ss.extend(safety_optimal_2)
 
-                            RL_3.ep_obs.extend(observation_optimal_3)
-                            RL_3.ep_as.extend(action_optimal_3)
-                            RL_3.ep_rs.extend(reward_optimal)
-                            RL_3.ep_ss.extend(safety_optimal_3)
+                        RL_3.ep_obs.extend(observation_optimal_3)
+                        RL_3.ep_as.extend(action_optimal_3)
+                        RL_3.ep_rs.extend(reward_optimal)
+                        RL_3.ep_ss.extend(safety_optimal_3)
 
                     else:
                         replay_index = np.random.choice(range(buffer_size), size=replay_size, replace=False)
@@ -615,7 +598,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_choice', type=int)
     parser.add_argument('--clip_eps', type=float, default=0.2)
-    parser.add_argument('--batch_size_tunning', type=int, default=50)
+    parser.add_argument('--batch_size_tunning', type=int, default=20)
     parser.add_argument('--rp_size', type=int, default=100)
     parser.add_argument('--safety_requirement', type=float, default=100)
     parser.add_argument('--recover', action='store_true')
