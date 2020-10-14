@@ -26,7 +26,7 @@ hyper_parameter = {
 params = {
         'batch_size': 20,
         # 'epochs': 100000,
-        'epochs': 50000,
+        'epochs': 80000,
         'path': "pppo_27_" + str(hyper_parameter['batch_C_numbers']),
         'rec_path': "pppo_separate_unified_replay_level_formal_new100",
         'recover': False,
