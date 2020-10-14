@@ -1,3 +1,4 @@
+# other name: PolicyGradient_PCPO_PPPO_me_mini_sim.py
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -35,6 +36,8 @@ class PolicyGradient:
         self.n_actions = n_actions
         self.n_features = n_features
         self.lr = learning_rate
+        print("learning rate: {}".format(self.lr))
+        self.pg_lr = 0.01
         self.suffix = suffix
 
         self.safety_requirement = safety_requirement
@@ -124,7 +127,7 @@ class PolicyGradient:
                 self.entro = self.entropy_weight * tf.reduce_mean(tf.reduce_sum(tf.log(tf.clip_by_value(self.all_act_prob, 1e-30, 1.0)) * self.all_act_prob, axis=1))
                 self.loss = loss
             with tf.name_scope('train' + self.suffix):
-                self.train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
+                self.train_op = tf.train.AdamOptimizer(self.pg_lr).minimize(loss)
 
             # safety loss
             """
@@ -312,11 +315,17 @@ class PolicyGradient:
         chosen_action_log_probs = self.sess.run(self.chosen_action_log_probs, self.feed_dict)  # used in safe_loss
         self.feed_dict[self.old_chosen_action_log_probs] = chosen_action_log_probs  # same value, but stop gradient
 
-        g, b, old_all_act_prob, old_params, old_safety_loss = self.sess.run(
-            [self.loss_flat_gradients_op,
-             self.constraint_flat_gradients_op,
+        # g, b, old_all_act_prob, old_params, old_safety_loss = self.sess.run(
+        #     [self.loss_flat_gradients_op,
+        #      self.constraint_flat_gradients_op,
+        #      self.all_act_prob,
+        #      self.flat_params_op,
+        #      self.average_safety_loss],
+        #     self.feed_dict)
+
+        b, old_all_act_prob, old_safety_loss = self.sess.run(
+            [self.constraint_flat_gradients_op,
              self.all_act_prob,
-             self.flat_params_op,
              self.average_safety_loss],
             self.feed_dict)
 
@@ -324,20 +333,20 @@ class PolicyGradient:
         self.feed_dict[self.old_all_act_prob] = old_all_act_prob
 
         # math
-        v = do_conjugate_gradient(self.get_fisher_product, g)  # x = A-1g
+        # v = do_conjugate_gradient(self.get_fisher_product, g)  # x = A-1g
         # H_b = doConjugateGradient(self.getFisherProduct, b)
-        approx_g = self.get_fisher_product(v)  # g = Ax = AA-1g
+        # approx_g = self.get_fisher_product(v)  # g = Ax = AA-1g
         # b = self.getFisherProduct(H_b)
         safety_constraint = self.safety_requirement - np.mean(self.ep_ss)
         linear_constraint_threshold = np.maximum(0, safety_constraint) + old_safety_loss
         eps = 1e-8
         delta = 2 * self.desired_kl
         c = -safety_constraint
-        q = np.dot(approx_g, v)
+        # q = np.dot(approx_g, v)
 
         if (np.dot(b, b) < eps):
-            lam = np.sqrt(q / delta)
-            nu = 0
+            # lam = np.sqrt(q / delta)
+            # nu = 0
             w = 0
             r, s, A, B = 0, 0, 0, 0
             optim_case = 4
@@ -345,9 +354,9 @@ class PolicyGradient:
             norm_b = np.sqrt(np.dot(b, b))
             unit_b = b / norm_b
             w = norm_b * do_conjugate_gradient(self.get_fisher_product, unit_b)
-            r = np.dot(w, approx_g)
+            # r = np.dot(w, approx_g)
             s = np.dot(w, self.get_fisher_product(w))
-            A = q - (r ** 2 / s)
+            # A = q - (r ** 2 / s)
             B = delta - (c ** 2 / s)
             if (c < 0 and B < 0):
                 optim_case = 3
@@ -358,47 +367,47 @@ class PolicyGradient:
             else:
                 optim_case = 0
                 # return self.learn_vio(epoch_i, entropy_weight, Ifprint)
-            lam = np.sqrt(q / delta)
-            nu = 0
+            # lam = np.sqrt(q / delta)
+            # nu = 0
 
-            if (optim_case == 2 or optim_case == 1):
-                lam_mid = r / c
-                L_mid = - 0.5 * (q / lam_mid + lam_mid * delta)
+            # if (optim_case == 2 or optim_case == 1):
+            #     lam_mid = r / c
+            #     L_mid = - 0.5 * (q / lam_mid + lam_mid * delta)
 
-                lam_a = np.sqrt(A / (B + eps))
-                L_a = -np.sqrt(A * B) - r * c / (s + eps)
+            #     lam_a = np.sqrt(A / (B + eps))
+            #     L_a = -np.sqrt(A * B) - r * c / (s + eps)
 
-                lam_b = np.sqrt(q / delta)
-                L_b = -np.sqrt(q * delta)
+            #     lam_b = np.sqrt(q / delta)
+            #     L_b = -np.sqrt(q * delta)
 
-                if lam_mid > 0:
-                    if c < 0:
-                        if lam_a > lam_mid:
-                            lam_a = lam_mid
-                            L_a = L_mid
-                        if lam_b < lam_mid:
-                            lam_b = lam_mid
-                            L_b = L_mid
-                    else:
-                        if lam_a < lam_mid:
-                            lam_a = lam_mid
-                            L_a = L_mid
-                        if lam_b > lam_mid:
-                            lam_b = lam_mid
-                            L_b = L_mid
+            #     if lam_mid > 0:
+            #         if c < 0:
+            #             if lam_a > lam_mid:
+            #                 lam_a = lam_mid
+            #                 L_a = L_mid
+            #             if lam_b < lam_mid:
+            #                 lam_b = lam_mid
+            #                 L_b = L_mid
+            #         else:
+            #             if lam_a < lam_mid:
+            #                 lam_a = lam_mid
+            #                 L_a = L_mid
+            #             if lam_b > lam_mid:
+            #                 lam_b = lam_mid
+            #                 L_b = L_mid
 
-                    if L_a >= L_b:
-                        lam = lam_a
-                    else:
-                        lam = lam_b
+            #         if L_a >= L_b:
+            #             lam = lam_a
+            #         else:
+            #             lam = lam_b
 
-                else:
-                    if c < 0:
-                        lam = lam_b
-                    else:
-                        lam = lam_a
+            #     else:
+            #         if c < 0:
+            #             lam = lam_b
+            #         else:
+            #             lam = lam_a
 
-                nu = max(0, lam * c - r) / (s + eps)
+            #     nu = max(0, lam * c - r) / (s + eps)
 
 
         '''
@@ -429,6 +438,9 @@ class PolicyGradient:
             self.learn_ppo(epoch_i, entropy_weight, Ifprint)
             cur_params = self.sess.run(self.flat_params_op)
 
+
+            # print("[KEY] b.T @ (cur_params - old_params) = {}".format(b.T @ (cur_params - old_params)))
+            # print("[KEY] np.sqrt(delta / (q + eps)) * r = {}".format(np.sqrt(delta / (q + eps)) * r))
             # flat_descent_step_tr = np.sqrt(delta / (q + eps)) * v # sqrt(2 * delta / g^t H^{-1} g) H^{-1} g
 
             # check the Lagrangian multipiler of the projected gradient descent
@@ -487,9 +499,9 @@ class PolicyGradient:
 
 
         # _, loss, all_act_prob, entro = self.sess.run([self.train_op, self.loss, self.all_act_prob, self.entro], feed_dict=self.feed_dict)
-        if Ifprint:
-            print("PCPO(learn): time: %f, epoch: %d, tput: %f, self.ep_ss: %f, safe_mean: %f, new_kl_divergence: %f, new_safety_loss: %f, new_loss: %f, entro: %f" % (
-                time.time(), epoch_i, np.mean(self.tput_batch), np.mean(self.ep_ss), np.mean(self.safe_batch), new_kl_divergence, new_safety_loss, new_loss, entro))
+        # if Ifprint:
+        #     print("PCPO(learn): time: %f, epoch: %d, tput: %f, self.ep_ss: %f, safe_mean: %f, new_kl_divergence: %f, new_safety_loss: %f, new_loss: %f, entro: %f" % (
+        #         time.time(), epoch_i, np.mean(self.tput_batch), np.mean(self.ep_ss), np.mean(self.safe_batch), new_kl_divergence, new_safety_loss, new_loss, entro))
 
         self.ep_obs, self.ep_as, self.ep_rs, self.ep_ss = [], [], [], []
         self.tput_batch, self.safe_batch = [], []
