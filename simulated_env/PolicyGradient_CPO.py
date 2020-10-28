@@ -208,7 +208,7 @@ class PolicyGradient:
 
     def learn(self, epoch_i, entropy_weight, Ifprint=False):
 
-        if np.mean(self.safe_batch) < 0.5*self.safety_requirement:
+        if np.mean(self.safe_batch) <= 0.5*self.safety_requirement:
             self.count += 1
         else:
             self.count = 0

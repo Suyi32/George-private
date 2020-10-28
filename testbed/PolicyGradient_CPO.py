@@ -207,140 +207,141 @@ class PolicyGradient:
         return 0
 
     def learn(self, epoch_i, entropy_weight, Ifprint=False):
+        return self.learn_vio(epoch_i, entropy_weight, Ifprint)
 
-        if np.mean(self.safe_batch) < 0.5*self.safety_requirement:
-            self.count += 1
-        else:
-            self.count = 0
-        if self.count > 20:
-            self.start_cpo = True
-
-        if not self.start_cpo:
-            return self.learn_vio(epoch_i, entropy_weight, Ifprint)
-        discounted_ep_rs_norm = self._discount_and_norm_rewards()
-        self.feed_dict = {self.tf_obs: np.vstack(self.ep_obs), self.tf_acts: np.array(self.ep_as),
-                          self.tf_vt: discounted_ep_rs_norm, self.entropy_weight: entropy_weight,
-                          # self.tf_safe: np.array(self.ep_ss)
-                          self.tf_safe: self._discount_and_norm_safety()}
-
-        chosen_action_log_probs = self.sess.run(self.chosen_action_log_probs, self.feed_dict)  # used in safe_loss
-        self.feed_dict[self.old_chosen_action_log_probs] = chosen_action_log_probs  # same value, but stop gradient
-
-        g, b, old_all_act_prob, old_params, old_safety_loss = self.sess.run(
-            [self.loss_flat_gradients_op,
-             self.constraint_flat_gradients_op,
-             self.all_act_prob,
-             self.flat_params_op,
-             self.average_safety_loss],
-            self.feed_dict)
-
-        # kl diveregnce
-        self.feed_dict[self.old_all_act_prob] = old_all_act_prob
-
-        # math
-        v = do_conjugate_gradient(self.get_fisher_product, g)  # x = A-1g
-        # H_b = doConjugateGradient(self.getFisherProduct, b)
-        approx_g = self.get_fisher_product(v)  # g = Ax = AA-1g
-        # b = self.getFisherProduct(H_b)
-        safety_constraint = self.safety_requirement - np.mean(self.safe_batch)
-        linear_constraint_threshold = np.maximum(0, safety_constraint) + old_safety_loss
-        eps = 1e-8
-        delta = 2 * self.desired_kl
-        c = -safety_constraint
-        q = np.dot(approx_g, v)
-
-        if (np.dot(b, b) < eps):
-            lam = np.sqrt(q / delta)
-            nu = 0
-            w = 0
-            r, s, A, B = 0, 0, 0, 0
-            optim_case = 4
-        else:
-            norm_b = np.sqrt(np.dot(b, b))
-            unit_b = b / norm_b
-            w = norm_b * do_conjugate_gradient(self.get_fisher_product, unit_b)
-            r = np.dot(w, approx_g)
-            s = np.dot(w, self.get_fisher_product(w))
-            A = q - (r ** 2 / s)
-            B = delta - (c ** 2 / s)
-            if (c < 0 and B < 0):
-                optim_case = 3
-            elif (c < 0 and B > 0):
-                optim_case = 2
-            elif (c > 0 and B > 0):
-                optim_case = 1
-            else:
-                optim_case = 0
-                return self.learn_vio(epoch_i, entropy_weight, Ifprint)
-            lam = np.sqrt(q / delta)
-            nu = 0
-
-            if (optim_case == 2 or optim_case == 1):
-                lam_mid = r / c
-                L_mid = - 0.5 * (q / lam_mid + lam_mid * delta)
-
-                lam_a = np.sqrt(A / (B + eps))
-                L_a = -np.sqrt(A * B) - r * c / (s + eps)
-
-                lam_b = np.sqrt(q / delta)
-                L_b = -np.sqrt(q * delta)
-
-                if lam_mid > 0:
-                    if c < 0:
-                        if lam_a > lam_mid:
-                            lam_a = lam_mid
-                            L_a = L_mid
-                        if lam_b < lam_mid:
-                            lam_b = lam_mid
-                            L_b = L_mid
-                    else:
-                        if lam_a < lam_mid:
-                            lam_a = lam_mid
-                            L_a = L_mid
-                        if lam_b > lam_mid:
-                            lam_b = lam_mid
-                            L_b = L_mid
-
-                    if L_a >= L_b:
-                        lam = lam_a
-                    else:
-                        lam = lam_b
-
-                else:
-                    if c < 0:
-                        lam = lam_b
-                    else:
-                        lam = lam_a
-
-                nu = max(0, lam * c - r) / (s + eps)
-
-        if optim_case > 0:
-            full_step = (1. / (lam + eps)) * (v + nu * w)
-
-        else:
-            full_step = np.sqrt(delta / (s + eps)) * w
-        # print("optim_case: %f" %(optim_case))
-
-        if (optim_case == 0 or optim_case == 1):
-            new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = do_line_search_CPO(self.get_metrics, old_params, full_step, self.desired_kl, linear_constraint_threshold, check_loss=False)
-        else:
-            new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = do_line_search_CPO(self.get_metrics, old_params, full_step, self.desired_kl, linear_constraint_threshold)
-
-        print('Success: ', status, "optim_case:", optim_case)
-
-        if (status == False):
-            self.sess.run(self.params_assign_op, feed_dict={self.new_params: new_params})
-
-
-        # _, loss, all_act_prob, entro = self.sess.run([self.train_op, self.loss, self.all_act_prob, self.entro], feed_dict=self.feed_dict)
-        if Ifprint:
-            print("epoch: %d, tput: %f, self.ep_ss: %f, safe_mean: %f, new_kl_divergence: %f, new_safety_loss: %f, new_loss: %f, entro: %f" % (
-                epoch_i, np.mean(self.tput_batch), np.mean(self.ep_ss), np.mean(self.safe_batch), new_kl_divergence, new_safety_loss, new_loss, entro))
-
-        self.ep_obs, self.ep_as, self.ep_rs, self.ep_ss = [], [], [], []
-        self.tput_batch, self.safe_batch = [], []
-
-        return optim_case
+        # if np.mean(self.safe_batch) < 0.5*self.safety_requirement:
+        #     self.count += 1
+        # else:
+        #     self.count = 0
+        # if self.count > 20:
+        #     self.start_cpo = True
+        #
+        # if not self.start_cpo:
+        #     return self.learn_vio(epoch_i, entropy_weight, Ifprint)
+        # discounted_ep_rs_norm = self._discount_and_norm_rewards()
+        # self.feed_dict = {self.tf_obs: np.vstack(self.ep_obs), self.tf_acts: np.array(self.ep_as),
+        #                   self.tf_vt: discounted_ep_rs_norm, self.entropy_weight: entropy_weight,
+        #                   # self.tf_safe: np.array(self.ep_ss)
+        #                   self.tf_safe: self._discount_and_norm_safety()}
+        #
+        # chosen_action_log_probs = self.sess.run(self.chosen_action_log_probs, self.feed_dict)  # used in safe_loss
+        # self.feed_dict[self.old_chosen_action_log_probs] = chosen_action_log_probs  # same value, but stop gradient
+        #
+        # g, b, old_all_act_prob, old_params, old_safety_loss = self.sess.run(
+        #     [self.loss_flat_gradients_op,
+        #      self.constraint_flat_gradients_op,
+        #      self.all_act_prob,
+        #      self.flat_params_op,
+        #      self.average_safety_loss],
+        #     self.feed_dict)
+        #
+        # # kl diveregnce
+        # self.feed_dict[self.old_all_act_prob] = old_all_act_prob
+        #
+        # # math
+        # v = do_conjugate_gradient(self.get_fisher_product, g)  # x = A-1g
+        # # H_b = doConjugateGradient(self.getFisherProduct, b)
+        # approx_g = self.get_fisher_product(v)  # g = Ax = AA-1g
+        # # b = self.getFisherProduct(H_b)
+        # safety_constraint = self.safety_requirement - np.mean(self.safe_batch)
+        # linear_constraint_threshold = np.maximum(0, safety_constraint) + old_safety_loss
+        # eps = 1e-8
+        # delta = 2 * self.desired_kl
+        # c = -safety_constraint
+        # q = np.dot(approx_g, v)
+        #
+        # if (np.dot(b, b) < eps):
+        #     lam = np.sqrt(q / delta)
+        #     nu = 0
+        #     w = 0
+        #     r, s, A, B = 0, 0, 0, 0
+        #     optim_case = 4
+        # else:
+        #     norm_b = np.sqrt(np.dot(b, b))
+        #     unit_b = b / norm_b
+        #     w = norm_b * do_conjugate_gradient(self.get_fisher_product, unit_b)
+        #     r = np.dot(w, approx_g)
+        #     s = np.dot(w, self.get_fisher_product(w))
+        #     A = q - (r ** 2 / s)
+        #     B = delta - (c ** 2 / s)
+        #     if (c < 0 and B < 0):
+        #         optim_case = 3
+        #     elif (c < 0 and B > 0):
+        #         optim_case = 2
+        #     elif (c > 0 and B > 0):
+        #         optim_case = 1
+        #     else:
+        #         optim_case = 0
+        #         return self.learn_vio(epoch_i, entropy_weight, Ifprint)
+        #     lam = np.sqrt(q / delta)
+        #     nu = 0
+        #
+        #     if (optim_case == 2 or optim_case == 1):
+        #         lam_mid = r / c
+        #         L_mid = - 0.5 * (q / lam_mid + lam_mid * delta)
+        #
+        #         lam_a = np.sqrt(A / (B + eps))
+        #         L_a = -np.sqrt(A * B) - r * c / (s + eps)
+        #
+        #         lam_b = np.sqrt(q / delta)
+        #         L_b = -np.sqrt(q * delta)
+        #
+        #         if lam_mid > 0:
+        #             if c < 0:
+        #                 if lam_a > lam_mid:
+        #                     lam_a = lam_mid
+        #                     L_a = L_mid
+        #                 if lam_b < lam_mid:
+        #                     lam_b = lam_mid
+        #                     L_b = L_mid
+        #             else:
+        #                 if lam_a < lam_mid:
+        #                     lam_a = lam_mid
+        #                     L_a = L_mid
+        #                 if lam_b > lam_mid:
+        #                     lam_b = lam_mid
+        #                     L_b = L_mid
+        #
+        #             if L_a >= L_b:
+        #                 lam = lam_a
+        #             else:
+        #                 lam = lam_b
+        #
+        #         else:
+        #             if c < 0:
+        #                 lam = lam_b
+        #             else:
+        #                 lam = lam_a
+        #
+        #         nu = max(0, lam * c - r) / (s + eps)
+        #
+        # if optim_case > 0:
+        #     full_step = (1. / (lam + eps)) * (v + nu * w)
+        #
+        # else:
+        #     full_step = np.sqrt(delta / (s + eps)) * w
+        # # print("optim_case: %f" %(optim_case))
+        #
+        # if (optim_case == 0 or optim_case == 1):
+        #     new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = do_line_search_CPO(self.get_metrics, old_params, full_step, self.desired_kl, linear_constraint_threshold, check_loss=False)
+        # else:
+        #     new_params, status, new_kl_divergence, new_safety_loss, new_loss, entro = do_line_search_CPO(self.get_metrics, old_params, full_step, self.desired_kl, linear_constraint_threshold)
+        #
+        # print('Success: ', status, "optim_case:", optim_case)
+        #
+        # if (status == False):
+        #     self.sess.run(self.params_assign_op, feed_dict={self.new_params: new_params})
+        #
+        #
+        # # _, loss, all_act_prob, entro = self.sess.run([self.train_op, self.loss, self.all_act_prob, self.entro], feed_dict=self.feed_dict)
+        # if Ifprint:
+        #     print("epoch: %d, tput: %f, self.ep_ss: %f, safe_mean: %f, new_kl_divergence: %f, new_safety_loss: %f, new_loss: %f, entro: %f" % (
+        #         epoch_i, np.mean(self.tput_batch), np.mean(self.ep_ss), np.mean(self.safe_batch), new_kl_divergence, new_safety_loss, new_loss, entro))
+        #
+        # self.ep_obs, self.ep_as, self.ep_rs, self.ep_ss = [], [], [], []
+        # self.tput_batch, self.safe_batch = [], []
+        #
+        # return optim_case
 
 
     def get_metrics(self, new_params):
