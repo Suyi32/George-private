@@ -462,11 +462,17 @@ class PolicyGradient:
             # This is used to remove the line search procedure
             optim_case = -1 # Suyi' change
         else:
-            cur_params = self.sess.run(self.flat_params_op)
-            # when infeasible, take the step that purly decreases the constrained value
-            flat_descent_step = np.sqrt(delta / (s + eps)) * w
+            # cur_params = self.sess.run(self.flat_params_op)
+            # # when infeasible, take the step that purly decreases the constrained value
+            # flat_descent_step = np.sqrt(delta / (s + eps)) * w
+            # optim_case = -2 # Suyi' change
+            
             optim_case = -2 # Suyi' change
+            return self.learn_vio(epoch_i, entropy_weight, Ifprint)
 
+            if Ifprint:
+                print("PPPO(learn_ppo): epoch: %d, tput: %f, self.ep_ss: %f, safe_mean: %f" % (
+                    epoch_i, np.mean(self.tput_batch), np.mean(self.ep_ss), np.mean(self.safe_batch) ))
         # This is used to remove the line search procedure
         # optim_case = -1   Suyi' change
 

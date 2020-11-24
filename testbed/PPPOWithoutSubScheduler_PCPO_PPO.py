@@ -39,6 +39,17 @@ params = {
 
 NUM_CONTAINERS = 100
 
+app_node_set = np.array([
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+     [2, 3, 5, 6, 7, 11, 12, 18, 20, 22, 23, 24, 25, 26],
+     [0, 2, 8, 9, 19, 23, 24, 25, 26],
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]])
+for idx in range(len(app_node_set)):
+    print("[INFO] No. of nodes for App {}: {}".format(idx, len(app_node_set[idx]) ))
+
 
 def train(params):
 
@@ -166,7 +177,11 @@ def train(params):
     tput_origimal_class = 0
     source_batch_, index_data_ = batch_data(NUM_CONTAINERS, env.NUM_APPS)  # index_data = [0,1,2,0,1,2]
 
+    time_ep_acc = 0.0
+    time_al_acc = 0.0
     while epoch_i < params['epochs']:
+        time_ep_start = time.time()
+
         if Recover:
             print("Recover from {}".format(ckpt_path_rec_1))
             RL_1.restore_session(ckpt_path_rec_1)
@@ -184,6 +199,8 @@ def train(params):
         """
         first layer
         """
+        time_al_start = time.time()
+
         source_batch_first = source_batch_.copy()
         observation_first_layer = np.zeros([nodes_per_group, env.NUM_APPS], int)
         for inter_episode_index in range(NUM_CONTAINERS):
@@ -264,6 +281,9 @@ def train(params):
 
             observation_third_layer_aggregation = np.append(observation_third_layer_aggregation, observation_third_layer, 0)
 
+        
+        time_al_end = time.time()
+        time_al_acc += time_al_end - time_al_start
         """
         After an entire allocation, calculate total throughput, reward
         """
@@ -283,10 +303,24 @@ def train(params):
 
         # list_check = list_check_sum + list_check_coex + list_check_per_app
         list_check = 0
+        '''
         for node in range(NUM_NODES):
             for app in range(env.NUM_APPS):
                 if env.state[node, :].sum() > params['container_limitation per node'] or env.state[node, app] > 1 or (app == 1 and env.state[node, 2] > 0) or (app == 2 and env.state[node, 1] > 0):
                     list_check += env.state[node, app]
+        '''
+        # container limitation & deployment spread
+        for node in range(NUM_NODES):
+            for app in range(env.NUM_APPS):
+                if env.state[node, :].sum() > params['container_limitation per node'] or env.state[node, app] > 1:
+                    list_check += env.state[node, app]
+        # hardware affinity & increamental deployment        
+        for app in range(7):
+            node_now = np.where(env.state[:,app]>0)[0]
+            for node_ in node_now:
+                if node_ not in app_node_set[app]:
+                    list_check += env.state[node_,app]
+
 
         list_check_ratio = list_check / NUM_CONTAINERS
 
@@ -341,7 +375,8 @@ def train(params):
             names['safety_optimal_vio_3_' + str(tput_origimal_class)].extend(safety_episode_3)
             names['reward_optimal_vio_' + str(tput_origimal_class)].extend(reward_episode_1)
 
-        if list_check_ratio <= safety_requirement*0.5:
+        # if list_check_ratio <= safety_requirement*0.5:
+        if list_check_ratio <= safety_requirement:
             if names['highest_tput_' + str(tput_origimal_class)] < tput:
                 names['highest_tput_' + str(tput_origimal_class)] = tput
 
@@ -516,6 +551,10 @@ def train(params):
             optim_case = RL_3.learn(epoch_i, thre_entropy)
             time_e = time.time()
             print("learning time epoch_i:", epoch_i, time_e - time_s)
+            print("End2End time epoch_i", epoch_i, time_ep_acc)
+            print("Allocate time epoch_i", epoch_i, time_al_acc)
+            time_al_acc = 0.0
+            time_ep_acc = 0.0
         """
         checkpoint, per 1000 episodes
         """
@@ -557,14 +596,19 @@ def train(params):
             thre_entropy = max(thre_entropy, 0.0001)
 
         epoch_i += 1
-        if epoch_i > 20000:
-            batch_size = 200
+        
+        time_ep_end = time.time()
+        time_ep_acc += time_ep_end - time_ep_start
+
+        if epoch_i > 10000:
+            batch_size = 100
 
 
 def batch_data(NUM_CONTAINERS, NUM_NODES):
 
     npzfile = np.load("./data/batch_set_cpo_27node_" + str(100) + '.npz')
-    batch_set = npzfile['batch_set']
+    # batch_set = npzfile['batch_set']
+    batch_set = npzfile['arr_0']
     rnd_array = batch_set[hyper_parameter['batch_C_numbers'], :]
     index_data = []
     for i in range(7):
@@ -598,11 +642,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_choice', type=int)
     parser.add_argument('--clip_eps', type=float, default=0.2)
-    parser.add_argument('--batch_size_tunning', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=50000)
+    parser.add_argument('--batch_size_tunning', type=int, default=20)
     parser.add_argument('--rp_size', type=int, default=100)
-    parser.add_argument('--safety_requirement', type=float, default=100)
+    parser.add_argument('--safety_requirement', type=float, default=0.05)
     parser.add_argument('--recover', action='store_true')
-    parser.add_argument('--not_norm_proj', action='store_true')
+    # parser.add_argument('--not_norm_proj', action='store_true')
     parser.add_argument('--lr', type=float, default=0.001)
     args = parser.parse_args()
 
@@ -610,11 +655,12 @@ def main():
     params['path'] = "pppo1006_27_" + str(hyper_parameter['batch_C_numbers'])
 
     params['batch_size'] = args.batch_size_tunning
-    params['epochs'] = params['epochs'] * (params['batch_size'] / 50)
+    # params['epochs'] = params['epochs'] * (params['batch_size'] / 50)
+    params['epochs'] = args.epochs
     params['clip_eps'] = args.clip_eps
     params['safety_requirement'] = args.safety_requirement
     params['recover'] = args.recover
-    params['not_norm_proj'] = args.not_norm_proj
+    # params['not_norm_proj'] = args.not_norm_proj
     params['learning rate'] = args.lr
 
     make_path(params['path'])
