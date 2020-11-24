@@ -12,6 +12,7 @@ print("Brain: PolicyGradient_PCPO_PPO")
 print("using PPPO")
 import argparse
 from testbed.simulator.simulator import Simulator
+import matplotlib.pyplot as plt
 
 
 """
@@ -24,11 +25,11 @@ hyper_parameter = {
         'batch_C_numbers': None
 }
 params = {
-        'batch_size': 50,
+        'batch_size': 20,
         # 'epochs': 100000,
-        'epochs': 50000,
-        'path': "pcpo_27_" + str(hyper_parameter['batch_C_numbers']),
-        'rec_path': "pcpo_separate_unified_replay_level_formal_new100",
+        'epochs': 80000,
+        'path': "pppo_27_" + str(hyper_parameter['batch_C_numbers']),
+        'rec_path': "pppo_separate_unified_replay_level_formal_new100",
         'recover': False,
         'learning rate': 0.01,
         'nodes per group': 3,
@@ -657,6 +658,7 @@ def main():
     params['batch_size'] = args.batch_size_tunning
     # params['epochs'] = params['epochs'] * (params['batch_size'] / 50)
     params['epochs'] = args.epochs
+
     params['clip_eps'] = args.clip_eps
     params['safety_requirement'] = args.safety_requirement
     params['recover'] = args.recover
@@ -666,5 +668,72 @@ def main():
     make_path(params['path'])
     train(params)
 
+
+def plot():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--batch_choice', type=int)
+    args = parser.parse_args()
+    choice = args.batch_choice
+
+    plot_meta("pppo1006_27_" + str(choice), "Throughput PPPO")
+    # plot_meta("60C_basic_limit10_128128", "Throughput Policy Gradient", plot_violation=False)
+    plt.legend(loc='best')
+    plt.xlabel("episode")
+    plt.ylabel("violation")
+    # plt.title(params["path"])
+    # plt.title("# of containers: "+ str(params['NUM_CONTAINERS_start']) + " - " +str(params['NUM_CONTAINERS_start'] + 10))
+    # plt.title("Constraint: app#1,2 no co-exist")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    # plt.savefig("./Constraint: sum(node) and app#1,2 no co-exist" + ".pdf", format='pdf', dpi=2400, transparent=True)
+
+def plot_meta(name,label_name, plot_violation=True):
+
+    np_path = "./checkpoint/" + name + "/optimal_file_name.npz"
+    npzfile = np.load(np_path)
+
+    tput = npzfile['tputs']#[0:50000] * 1.05
+    # vio = npzfile['vio'][0:50000]
+    epoch = npzfile['candidate']
+    epoch = epoch#[0:50000]
+    epoch = epoch
+    window_size = 50
+    lenth = len(tput)
+
+    tput_smooth = np.convolve(tput, np.ones(window_size, dtype=int), 'valid')
+    epoch_smooth = np.convolve(epoch, np.ones(window_size, dtype=int), 'valid')
+
+    # tput = npzfile['tputs']
+    # epoch = npzfile['candidate']
+    # window_size = 10
+    # tput_smooth = np.convolve(tput, np.ones(window_size, dtype=int), 'valid')
+    # epoch_smooth = np.convolve(epoch, np.ones(window_size, dtype=int), 'valid')
+
+    plt.subplot(211)
+    plt.plot(1.0 * epoch_smooth / window_size, 1.0 * tput_smooth / window_size, '.', label=label_name)
+    plt.grid(True)
+    # if plot_violation:
+    #     vio = npzfile['vio']
+    #     vio_smooth = np.convolve(vio, np.ones(window_size, dtype=int), 'valid')
+    #     plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_smooth / window_size, '.', label="Violation CPO")
+    if plot_violation:
+        plt.subplot(212)
+        vio_coex = npzfile['vi_sum']+npzfile['vi_coex']+npzfile['vi_perapp']
+        vio_coex_smooth = np.convolve(vio_coex, np.ones(window_size, dtype=int), 'valid')
+        plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_coex_smooth / window_size, '.', label="Violtion (sum)")
+
+        # vio_coex = npzfile['vi_coex']
+        # vio_coex_smooth = np.convolve(vio_coex, np.ones(window_size, dtype=int), 'valid')
+        # plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_coex_smooth / window_size, '.', label="Violtion (co-exist)")
+        #
+        # vio_perapp = npzfile['vi_perapp']
+        # vio_perapp_smooth = np.convolve(vio_perapp, np.ones(window_size, dtype=int), 'valid')
+        # plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_perapp_smooth / window_size, '.', label="Violtion (co-exist)")
+
+
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    plot()
