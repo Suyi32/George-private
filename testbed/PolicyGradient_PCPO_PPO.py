@@ -6,7 +6,8 @@ from testbed.util.commons import *
 import numpy as np
 # np.set_printoptions(threshold=sys.maxsize)
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import time
 
 
