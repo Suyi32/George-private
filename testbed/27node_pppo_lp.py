@@ -805,7 +805,7 @@ def train(params):
         time_ep_end = time.time()
         time_ep_acc += time_ep_end - time_ep_start
 
-        if epoch_i > 10000:
+        if epoch_i > 2000:
             batch_size = 100
 
 
