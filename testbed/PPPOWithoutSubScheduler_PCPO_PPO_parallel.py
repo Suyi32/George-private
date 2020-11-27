@@ -295,8 +295,6 @@ def train(params):
     tput_origimal_class = 0
     source_batch_, index_data_ = batch_data(NUM_CONTAINERS, env.NUM_APPS)  # index_data = [0,1,2,0,1,2]
 
-    time_ep_acc = 0.0
-    time_al_acc = 0.0
 
     while epoch_i < params['epochs']:
         time_ep_start = time.time()
@@ -317,12 +315,13 @@ def train(params):
         """
         Episode
         """
+        time_al_start = time.time()
         batch_sample_results = []
         for ep_idx in range(batch_size):
             batch_sample_results.append(rl_sample(observation, source_batch_, index_data, RL_1, RL_2, RL_3, env, params))
         
         print("Length of batch_sample_results:", len(batch_sample_results))
-
+        time_al_end = time.time()
 
         '''
         After sampling, process the results
@@ -610,11 +609,14 @@ def train(params):
             # print("RL_3.ep_obs: {}, RL_3.ep_as: {}, RL_3.ep_rs: {}, RL_3.ep_ss: {}".format(len(RL_3.ep_obs), len(RL_3.ep_as), len(RL_3.ep_rs), len(RL_3.ep_ss)))
             # print("########")
 
-
+            time_s = time.time()
             RL_1.learn(epoch_i, thre_entropy, Ifprint=True)
             RL_2.learn(epoch_i, thre_entropy)
             optim_case = RL_3.learn(epoch_i, thre_entropy)
+            time_e = time.time()
 
+            
+            
 
         '''
         save checkpoint
@@ -657,6 +659,11 @@ def train(params):
 
             thre_entropy *= 0.5
             thre_entropy = max(thre_entropy, 0.0001)
+
+
+        print("End2End time epoch_i", epoch_i, time.time() - time_ep_start)
+        print("Allocate time epoch_i", epoch_i, time_al_end - time_al_start)
+        print("learning time epoch_i:", epoch_i, time_e - time_s)
 
         epoch_i += 1
         if epoch_i > 500:
