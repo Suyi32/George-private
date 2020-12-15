@@ -12,10 +12,10 @@ screen -dmS MySessionName7 &
 screen -dmS MySessionName8 &
 screen -dmS MySessionName9 &
 screen -dmS MySessionName10 &
-screen -dmS MySessionName11 &
-screen -dmS MySessionName12 &
-screen -dmS MySessionName13 &
-screen -dmS MySessionName14 &
+#screen -dmS MySessionName11 &
+#screen -dmS MySessionName12 &
+#screen -dmS MySessionName13 &
+#screen -dmS MySessionName14 &
 screen -S MySessionName0 -p 0 -X stuff "/workspace/George-private/testbed;  python3 $pathname --start_sample 0
 " &
 screen -S MySessionName1 -p 0 -X stuff "/workspace/George-private/testbed;  python3 $pathname --start_sample 10
@@ -37,12 +37,4 @@ screen -S MySessionName8 -p 0 -X stuff "/workspace/George-private/testbed;  pyth
 screen -S MySessionName9 -p 0 -X stuff "/workspace/George-private/testbed;  python3 $pathname --start_sample 90
 "&
 screen -S MySessionName10 -p 0 -X stuff "/workspace/George-private/testbed;  python3 $pathname --start_sample 100
-"&
-screen -S MySessionName11 -p 0 -X stuff "/workspace/George-private/testbed;  python3 $pathname --start_sample 110
-"&
-screen -S MySessionName12 -p 0 -X stuff "/workspace/George-private/testbed;  python3 $pathname --start_sample 120
-"&
-screen -S MySessionName13 -p 0 -X stuff "/workspace/George-private/testbed;  python3 $pathname --start_sample 130
-"&
-screen -S MySessionName14 -p 0 -X stuff "/workspace/George-private/testbed;  python3 $pathname --start_sample 140
-"&
+"

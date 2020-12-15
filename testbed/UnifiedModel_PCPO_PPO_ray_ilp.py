@@ -558,7 +558,7 @@ def train(params):
         NUM_CONTAINERS = np.random.randint(NUM_CONTAINERS_start + 1, NUM_CONTAINERS_start + 11)
         tput_origimal_class = 0#int(NUM_CONTAINERS - NUM_CONTAINERS_start - 1)
         source_batch_, index_data_ = batch_data(NUM_CONTAINERS, env.NUM_APPS)  # index_data = [0,1,2,0,1,2]
-
+        print("NUM_CONTAINERS:",NUM_CONTAINERS)
         if Recover:
             print("Recover from {}".format(ckpt_path_rec_1))
             RL_1.restore_session(ckpt_path_rec_1)
@@ -948,7 +948,7 @@ def batch_data(NUM_CONTAINERS, NUM_NODES):
                     random_idx == 5 and rnd_array[random_idx] > 26) \
                     or (random_idx == 6 and rnd_array[random_idx] > 26):
                 random_idx = randint(0, NUM_CONTAINERS) % NUM_NODES
-            rnd_array[random_idx] += 1;
+            rnd_array[random_idx] += 1
 
         assert sum(rnd_array) == NUM_CONTAINERS
 
