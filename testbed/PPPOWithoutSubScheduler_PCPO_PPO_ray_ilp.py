@@ -410,7 +410,7 @@ class Network():
         if epoch_i < 300:
             mega_size = 1
         else:
-            mega_size = 4
+            mega_size = 2
 
         # if epoch_i % 2 == 0:
         #     mega_size = 1
