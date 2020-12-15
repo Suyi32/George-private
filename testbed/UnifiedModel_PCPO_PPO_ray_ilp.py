@@ -28,15 +28,13 @@ fish
 python3 PCPOWithoutSubScheduler.py --batch_choice 0
 """
 
-hyper_parameter = {
-        'batch_C_numbers': None
-}
+
 params = {
         'batch_size': 50,
         # 'epochs': 100000,
-        'epochs': 50000,
-        'path': "pcpo_27_" + str(hyper_parameter['batch_C_numbers']),
-        'rec_path': "pcpo_separate_unified_replay_level_formal_new100",
+        'epochs': 5000000,
+        'path': "unified_27_",
+        'rec_path': "unified_27_",
         'recover': False,
         'learning rate': 0.01,
         'nodes per group': 3,
@@ -45,7 +43,7 @@ params = {
         'container_limitation per node': 8
 }
 
-NUM_CONTAINERS = 100
+# NUM_CONTAINERS = 100
 
 app_node_set = np.array([
      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
@@ -67,7 +65,7 @@ class Network():
             n_actions=n_actions,
             n_features=n_features,
             learning_rate=params['learning rate'],
-            suffix=str(100) + '1a_sampler',
+            suffix=str(params['NUM_CONTAINERS_start']) + '1a_sampler',
             safety_requirement=params['safety_requirement'],
             params=params,
             idx=idx)
@@ -76,7 +74,7 @@ class Network():
             n_actions=n_actions,
             n_features=n_features,
             learning_rate=params['learning rate'],
-            suffix=str(100) + '2a_sampler',
+            suffix=str(params['NUM_CONTAINERS_start']) + '2a_sampler',
             safety_requirement=params['safety_requirement'],
             params=params,
             idx=idx)
@@ -85,7 +83,7 @@ class Network():
             n_actions=n_actions,
             n_features=n_features,
             learning_rate=params['learning rate'],
-            suffix=str(100) + '3a_sampler',
+            suffix=str(params['NUM_CONTAINERS_start']) + '3a_sampler',
             safety_requirement=params['safety_requirement'],
             params=params,
             idx=idx)
@@ -100,6 +98,7 @@ class Network():
 
     def rl_sample(self, observation, source_batch_, index_data, RL_1_weights, RL_2_weights, RL_3_weights, sim, env, params, idx):
         # one_start_time = time.time()
+        NUM_CONTAINERS = sum(source_batch_)
 
         self.set_weights(RL_1_weights, RL_2_weights, RL_3_weights)
 
@@ -434,6 +433,7 @@ def train(params):
     NUM_NODES = params['number of nodes in the cluster']
     env = LraClusterEnv(num_nodes=NUM_NODES)
     batch_size = params['batch_size']
+    NUM_CONTAINERS_start = params['NUM_CONTAINERS_start']
     ckpt_path_1 = "./checkpoint/" + params['path'] + "1/model.ckpt"
     ckpt_path_2 = "./checkpoint/" + params['path'] + "2/model.ckpt"
     ckpt_path_3 = "./checkpoint/" + params['path'] + "3/model.ckpt"
@@ -461,7 +461,7 @@ def train(params):
         n_actions=n_actions,
         n_features=n_features,
         learning_rate=params['learning rate'],
-        suffix=str(100) + '1a',
+        suffix=str(params['NUM_CONTAINERS_start']) + '1a',
         safety_requirement=safety_requirement,
         params=params)
 
@@ -469,7 +469,7 @@ def train(params):
         n_actions=n_actions,
         n_features=n_features,
         learning_rate=params['learning rate'],
-        suffix=str(100) + '2a',
+        suffix=str(params['NUM_CONTAINERS_start']) + '2a',
         safety_requirement=safety_requirement,
         params=params)
 
@@ -477,7 +477,7 @@ def train(params):
         n_actions=n_actions,
         n_features=n_features,
         learning_rate=params['learning rate'],
-        suffix=str(100) + '3a',
+        suffix=str(params['NUM_CONTAINERS_start']) + '3a',
         safety_requirement=safety_requirement,
         params=params)
     model_time_end = time.time()
@@ -545,21 +545,8 @@ def train(params):
         names['number_optimal_vio_' + str(i)] = []
         names['optimal_range_vio_' + str(i)] = 1.1
 
-    # def store_episode_1(observations, actions):
-    #     observation_episode_1.append(observations)
-    #     action_episode_1.append(actions)
-
-    # def store_episode_2(observations, actions):
-    #     observation_episode_2.append(observations)
-    #     action_episode_2.append(actions)
-
-    # def store_episode_3(observations, actions):
-    #    observation_episode_3.append(observations)
-    #    action_episode_3.append(actions)
-
-
-    tput_origimal_class = 0
-    source_batch_, index_data_ = batch_data(NUM_CONTAINERS, env.NUM_APPS)  # index_data = [0,1,2,0,1,2]
+    # tput_origimal_class = 0
+    # source_batch_, index_data_ = batch_data(NUM_CONTAINERS, env.NUM_APPS)  # index_data = [0,1,2,0,1,2]
 
 
     Samplers = [ Network.remote(n_actions, n_features, params, _) for _ in range(num_samplers) ]
@@ -567,6 +554,9 @@ def train(params):
 
     while epoch_i < params['epochs']:
         time_ep_start = time.time()
+        NUM_CONTAINERS = np.random.randint(NUM_CONTAINERS_start + 1, NUM_CONTAINERS_start + 11)
+        tput_origimal_class = 0#int(NUM_CONTAINERS - NUM_CONTAINERS_start - 1)
+        source_batch_, index_data_ = batch_data(NUM_CONTAINERS, env.NUM_APPS)  # index_data = [0,1,2,0,1,2]
 
         if Recover:
             print("Recover from {}".format(ckpt_path_rec_1))
@@ -586,9 +576,6 @@ def train(params):
         """
         time_al_start = time.time()
         batch_sample_results = []
-        # for ep_idx in range(batch_size):
-        #     batch_sample_results.append(rl_sample(observation, source_batch_, index_data, RL_1, RL_2, RL_3, sim, env, params))
-        
         RL_1_weights = RL_1.get_weights()
         RL_2_weights = RL_2.get_weights()
         RL_3_weights = RL_3.get_weights()
@@ -599,9 +586,6 @@ def train(params):
 
         batch_sample_results = list(chain.from_iterable(batch_sample_results))
         num_sampled += len(batch_sample_results)
-
-        # batch_sample_results = ray.get([ rl_sample.remote(observation, source_batch_, index_data, RL_1_weights, RL_2_weights, RL_3_weights, sim, env, params, idx=x)
-        #                                 for x in range(num_cpus) ])
 
         print("Length of batch_sample_results:", len(batch_sample_results))
         time_al_end = time.time()
@@ -886,9 +870,6 @@ def train(params):
             optim_case = RL_3.learn(epoch_i, thre_entropy)
             time_e = time.time()
 
-            
-            
-
         '''
         save checkpoint
         '''
@@ -950,16 +931,16 @@ def train(params):
 
 def batch_data(NUM_CONTAINERS, NUM_NODES):
 
-    npzfile = np.load("./data/batch_set_cpo_27node_" + str(100) + '.npz')
-    # batch_set = npzfile['batch_set']
-    batch_set = npzfile['arr_0']
-    rnd_array = batch_set[hyper_parameter['batch_C_numbers'], :]
+    _sum = NUM_CONTAINERS
+    n = NUM_NODES
+    while True:
+        rnd_array = np.random.multinomial(_sum, np.ones(n) / n, size=1)[0]
+        if (rnd_array <= 27 * 1).all() and (rnd_array[1] <= 10) and (rnd_array[2] <= 10):
+            break
     index_data = []
-    for i in range(7):
+    for i in range(NUM_NODES):
         index_data.extend([i] * rnd_array[i])
 
-    print(hyper_parameter['batch_C_numbers'])
-    print(rnd_array)
     return rnd_array, index_data
 
 
@@ -984,27 +965,28 @@ def make_path(dirname):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_choice', type=int)
+    # parser.add_argument('--batch_choice', type=int)
     parser.add_argument('--clip_eps', type=float, default=0.2)
     parser.add_argument('--epochs', type=int, default=50000)
     parser.add_argument('--batch_size_tunning', type=int, default=20)
     parser.add_argument('--rp_size', type=int, default=100)
     parser.add_argument('--safety_requirement', type=float, default=0.05)
     parser.add_argument('--recover', action='store_true')
-    # parser.add_argument('--not_norm_proj', action='store_true')
     parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--start_sample', type=int, default=0)
+
+
     args = parser.parse_args()
 
-    hyper_parameter['batch_C_numbers'] = args.batch_choice
-    params['path'] = "pppo1006_27_" + str(hyper_parameter['batch_C_numbers'])
+    params['NUM_CONTAINERS_start'] = args.start_sample
+    params['path'] += str(args.start_sample)
+    params['rec_path'] += str(args.start_sample)
 
     params['batch_size'] = args.batch_size_tunning
-    # params['epochs'] = params['epochs'] * (params['batch_size'] / 50)
     params['epochs'] = args.epochs
     params['clip_eps'] = args.clip_eps
     params['safety_requirement'] = args.safety_requirement
     params['recover'] = args.recover
-    # params['not_norm_proj'] = args.not_norm_proj
     params['learning rate'] = args.lr
 
     make_path(params['path'])
