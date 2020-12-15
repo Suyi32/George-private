@@ -18,9 +18,9 @@ from z3 import *
 import z3
 
 import ray
-num_cpus = 20
+num_cpus = 1
 ray.init(num_cpus = num_cpus) # Specify this system has 4 CPUs.
-num_samplers = 20
+num_samplers = 1
 
 """
 fish
