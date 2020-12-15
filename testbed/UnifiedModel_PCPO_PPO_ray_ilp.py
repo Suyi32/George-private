@@ -13,6 +13,7 @@ print("using PPPO")
 import argparse
 from testbedlib.simulator.simulator import Simulator
 from itertools import chain
+from random import randint
 
 from z3 import *
 import z3
@@ -616,7 +617,6 @@ def train(params):
             list_check_sum  = batch_sample_results[sample_idx][7]["list_check_sum"]
             list_check_coex = batch_sample_results[sample_idx][7]["list_check_coex"]
 
-
             safety_episode_1 = [list_check_ratio * 1.0] * len(batch_sample_results[sample_idx][1])
             reward_episode_1 = [reward_ratio * 1.0] * len(batch_sample_results[sample_idx][1])
 
@@ -930,13 +930,32 @@ def train(params):
 
 
 def batch_data(NUM_CONTAINERS, NUM_NODES):
-
     _sum = NUM_CONTAINERS
     n = NUM_NODES
-    while True:
+    if NUM_CONTAINERS < 151:  # perfectly satisfy constraints
+        # while True:
+        #     rnd_array = np.random.multinomial(_sum, np.ones(n) / n, size=1)[0]
+        #     if (rnd_array <= 27 * 1).all() and (rnd_array[2] <= 14) and (rnd_array[3] <= 9):
+        #         # print("[INFO] rnd_array", rnd_array)
+        #         break
+        rnd_array = [0] * NUM_NODES
+        for i in range(NUM_CONTAINERS):
+            random_idx = randint(0, NUM_CONTAINERS) % NUM_NODES
+            while (random_idx == 2 and rnd_array[random_idx] > 13) or (random_idx == 3 and rnd_array[random_idx] > 8) \
+                    or (random_idx == 0 and rnd_array[random_idx] > 26) or (
+                    random_idx == 1 and rnd_array[random_idx] > 26) \
+                    or (random_idx == 4 and rnd_array[random_idx] > 26) or (
+                    random_idx == 5 and rnd_array[random_idx] > 26) \
+                    or (random_idx == 6 and rnd_array[random_idx] > 26):
+                random_idx = randint(0, NUM_CONTAINERS) % NUM_NODES
+            rnd_array[random_idx] += 1;
+
+        assert sum(rnd_array) == NUM_CONTAINERS
+
+    else:  # not perfectly satisfy constraints
         rnd_array = np.random.multinomial(_sum, np.ones(n) / n, size=1)[0]
-        if (rnd_array <= 27 * 1).all() and (rnd_array[1] <= 10) and (rnd_array[2] <= 10):
-            break
+        # print("[INFO] rnd_array", rnd_array)
+
     index_data = []
     for i in range(NUM_NODES):
         index_data.extend([i] * rnd_array[i])
