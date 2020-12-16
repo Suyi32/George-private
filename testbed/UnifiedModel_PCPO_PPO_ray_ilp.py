@@ -932,7 +932,7 @@ def train(params):
 def batch_data(NUM_CONTAINERS, NUM_NODES):
     _sum = NUM_CONTAINERS
     n = NUM_NODES
-    if NUM_CONTAINERS < 101:  # perfectly satisfy constraints
+    if NUM_CONTAINERS < 111:  # perfectly satisfy constraints
         # while True:
         #     rnd_array = np.random.multinomial(_sum, np.ones(n) / n, size=1)[0]
         #     if (rnd_array <= 27 * 1).all() and (rnd_array[2] <= 14) and (rnd_array[3] <= 9):
