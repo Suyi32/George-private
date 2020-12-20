@@ -718,7 +718,7 @@ def plot():
     args = parser.parse_args()
     choice = args.batch_choice
 
-    plot_meta("pppo1006_27_" + str(choice), "Throughput PPPO")
+    plot_meta("unified_27_" + str(70), "Throughput PPPO")
     # plot_meta("60C_basic_limit10_128128", "Throughput Policy Gradient", plot_violation=False)
     plt.legend(loc='best')
     plt.xlabel("episode")
@@ -774,7 +774,22 @@ def plot_meta(name, label_name, plot_violation=True):
         # vio_perapp_smooth = np.convolve(vio_perapp, np.ones(window_size, dtype=int), 'valid')
         # plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_perapp_smooth / window_size, '.', label="Violtion (co-exist)")
 
+def data_generate():
+    npzfile = np.load("data/batch_set_cpo_27node_100.npz")
+    batch_set = npzfile['arr_0']
+    batch_set_1000 = batch_set *10
+    batch_set_1500 = batch_set * 15
+    batch_set_2000 = batch_set * 20
+    batch_set_200 = batch_set * 2
+    batch_set_300 = batch_set * 3
+    np.savez("data/batch_set_cpo_27node_1000.npz", batch_set=batch_set_1000)
+    np.savez("data/batch_set_cpo_27node_1500.npz", batch_set=batch_set_1500)
+    np.savez("data/batch_set_cpo_27node_2000.npz", batch_set=batch_set_2000)
+    np.savez("data/batch_set_cpo_27node_200.npz", batch_set=batch_set_200)
+    np.savez("data/batch_set_cpo_27node_300.npz", batch_set=batch_set_300)
+
 
 if __name__ == "__main__":
-    main()
+    # main()
     # plot()
+    data_generate()

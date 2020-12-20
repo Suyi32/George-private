@@ -18,9 +18,9 @@ from random import randint
 from z3 import *
 import z3
 
-import ray
-num_cpus = 1
-ray.init(num_cpus = num_cpus) # Specify this system has 4 CPUs.
+# import ray
+# num_cpus = 1
+# ray.init(num_cpus = num_cpus) # Specify this system has 4 CPUs.
 num_samplers = 1
 
 """
@@ -36,7 +36,7 @@ params = {
         'epochs': 5000000,
         'path': "unified_27_",
         'rec_path': "unified_27_",
-        'recover': False,
+        'recover': True,
         'learning rate': 0.01,
         'nodes per group': 3,
         'number of nodes in the cluster': 27,
@@ -58,7 +58,7 @@ for idx in range(len(app_node_set)):
     print("[INFO] No. of nodes for App {}: {}".format(idx, len(app_node_set[idx]) ))
 
 
-@ray.remote
+# @ray.remote
 class Network():
     def __init__(self, n_actions, n_features, params, idx):
 
@@ -550,7 +550,7 @@ def train(params):
     # source_batch_, index_data_ = batch_data(NUM_CONTAINERS, env.NUM_APPS)  # index_data = [0,1,2,0,1,2]
 
 
-    Samplers = [ Network.remote(n_actions, n_features, params, _) for _ in range(num_samplers) ]
+    # Samplers = [ Network.remote(n_actions, n_features, params, _) for _ in range(num_samplers) ]
     num_sampled = 0
 
     while epoch_i < params['epochs']:
@@ -559,7 +559,7 @@ def train(params):
         tput_origimal_class = 0#int(NUM_CONTAINERS - NUM_CONTAINERS_start - 1)
         source_batch_, index_data_ = batch_data(NUM_CONTAINERS, env.NUM_APPS)  # index_data = [0,1,2,0,1,2]
         print("NUM_CONTAINERS:",NUM_CONTAINERS)
-        if Recover:
+        if True:
             print("Recover from {}".format(ckpt_path_rec_1))
             RL_1.restore_session(ckpt_path_rec_1)
             RL_2.restore_session(ckpt_path_rec_2)

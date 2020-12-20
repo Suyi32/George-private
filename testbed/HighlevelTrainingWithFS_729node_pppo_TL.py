@@ -2,10 +2,10 @@ import numpy as np
 import time
 import os
 import sys
-sys.path.append("/Users/ourokutaira/Desktop/George")
+sys.path.append("/workspace/George-private")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbedlib.highlevel_env_pppo import LraClusterEnv
-from testbedlib.PolicyGradient_PCPO_PPO import PolicyGradient
+from testbedlib.PolicyGradient_PCPO_PPO_transferLearning import PolicyGradient
 import argparse
 import matplotlib.pyplot as plt
 from z3 import *
@@ -24,10 +24,10 @@ hyper_parameter = {
 
 params = {
         'batch_size': 20,
-        'epochs': 10000,
-        'path': "pppo_729_fromscratch_" + str(hyper_parameter['container_N']) + "_" + str(hyper_parameter['batch_C_numbers']),
-        'path_recover': "cpo_clustering_729_pre_vio_new_1000",
-        'recover': False,
+        'epochs': 3000,
+        'path': "729_tl_" + str(hyper_parameter['batch_C_numbers']),
+        'path_recover': "transfer_2",
+        'recover': True,
         'number of containers': 2100,
         'learning rate': 0.01,
         'nodes per group': 3,
@@ -72,9 +72,9 @@ def train(params):
     make_path(params['path'] + "2")
     make_path(params['path'] + "3")
 
-    ckpt_path_recover_1 = "../results/cpo/newhypernode/" + params['path_recover'] + "1/model.ckpt"
-    ckpt_path_recover_2 = "../results/cpo/newhypernode/" + params['path_recover'] + "2/model.ckpt"
-    ckpt_path_recover_3 = "../results/cpo/newhypernode/" + params['path_recover'] + "3/model.ckpt"
+    ckpt_path_recover_1 = "./checkpoint/" + params['path_recover'] + "1/model.ckpt"
+    ckpt_path_recover_2 = "./checkpoint/" + params['path_recover'] + "2/model.ckpt"
+    ckpt_path_recover_3 = "./checkpoint/" + params['path_recover'] + "3/model.ckpt"
 
     env = LraClusterEnv(num_nodes=NUM_NODES)
 
@@ -581,7 +581,7 @@ def train(params):
         """
         checkpoint, per 1000 episodes
         """
-        if (epoch_i % 2000 == 0) & (epoch_i > 1):
+        if (epoch_i % 200 == 0) & (epoch_i > 1):
             for class_replay in range(0,10):
                 highest_value = names['highest_tput_' + str(class_replay)]
                 print("\n epoch: %d, highest tput: %f" % (epoch_i, highest_value))
@@ -592,8 +592,8 @@ def train(params):
             RL_1.save_session(ckpt_path_1)
             RL_2.save_session(ckpt_path_2)
             RL_3.save_session(ckpt_path_3)
-            np.savez(np_path, tputs=np.array(RL_1.tput_persisit), candidate=np.array(RL_1.episode), vi_coex=np.array(RL_1.coex_persisit), vio_sum=np.array(RL_1.sum_persisit), time=np.array(RL_1.time_ersist), vio_persis=np.array(RL_1.safe_persisit))
-            print("epoch:", epoch_i, "mean(sum): ", np.mean(RL_1.sum_persisit[-500:]), "mean(coex): ", np.mean(RL_1.coex_persisit[-500:]))
+            np.savez(np_path, tputs=np.array(RL_1.tput_persisit), candidate=np.array(RL_1.episode), vio_persis=np.array(RL_1.safe_persisit))
+            print("epoch:", epoch_i, "mean(sum): ", np.mean(RL_1.sum_persisit), "mean(coex): ", np.mean(RL_1.coex_persisit))
             """
             optimal range adaptively change
             """
@@ -709,7 +709,7 @@ def main():
     args = parser.parse_args()
     hyper_parameter['batch_C_numbers'] = args.batch_choice
     hyper_parameter['container_N'] = args.container_N
-    params['path'] = "pppo_729_fromscratch_" + str(hyper_parameter['container_N']) + "_" + str(hyper_parameter['batch_C_numbers'])
+    params['path'] = "729_tl_" + str(hyper_parameter['batch_C_numbers'])
     make_path(params['path'])
     train(params)
     draw_graph_single(params)
