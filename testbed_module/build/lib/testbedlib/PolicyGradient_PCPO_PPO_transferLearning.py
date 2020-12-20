@@ -353,7 +353,7 @@ class PolicyGradient:
             self.count += 1
         else:
             self.count = 0
-        if self.count > 10:
+        if self.count > 3:
             self.start_cpo = True
         # self.start_cpo = True
         if not self.start_cpo:
