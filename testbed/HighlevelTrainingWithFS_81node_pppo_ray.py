@@ -27,7 +27,7 @@ python3 PCPOWithoutSubScheduler.py --batch_choice 0
 
 hyper_parameter = {
         'batch_C_numbers': None,
-        'container_N':None
+        'container_N':2000
 }
 
 params = {
@@ -955,9 +955,8 @@ def train(params):
 
 
 def batch_data(NUM_CONTAINERS, NUM_NODES):
-    npzfile = np.load("./data/batch_set_cpo_27node_" + str(100) + '.npz')
-    # batch_set = npzfile['batch_set']
-    batch_set = npzfile['arr_0']
+    npzfile = np.load("data/batch_set_cpo_27node_" + str(hyper_parameter['container_N']) + '.npz')
+    batch_set = npzfile['batch_set']
     rnd_array = batch_set[hyper_parameter['batch_C_numbers'], :]
     index_data = []
     for i in range(7):
@@ -987,7 +986,7 @@ def make_path(dirname):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_choice', type=int)
+    parser.add_argument('--batch_choice', type=int,default=0)
     parser.add_argument('--clip_eps', type=float, default=0.2)
     parser.add_argument('--epochs', type=int, default=50000)
     parser.add_argument('--batch_size_tunning', type=int, default=20)
