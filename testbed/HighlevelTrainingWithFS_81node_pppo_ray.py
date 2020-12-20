@@ -14,7 +14,7 @@ from itertools import chain
 
 import ray
 
-num_cpus = 20
+num_cpus = 4
 ray.init(num_cpus=num_cpus)  # Specify this system has 4 CPUs.
 num_samplers = 20
 
