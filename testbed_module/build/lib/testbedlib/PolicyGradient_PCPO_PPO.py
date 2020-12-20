@@ -5,10 +5,48 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbedlib.util.commons import *
 import numpy as np
 # np.set_printoptions(threshold=sys.maxsize)
-
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import time
+import argparse
 
+parser = argparse.ArgumentParser()
+# parser.add_argument('--batch_choice', type=int)
+parser.add_argument('--clip_eps', type=float, default=0.2)
+parser.add_argument('--epochs', type=int, default=50000)
+parser.add_argument('--batch_size_tunning', type=int, default=20)
+parser.add_argument('--rp_size', type=int, default=100)
+parser.add_argument('--safety_requirement', type=float, default=0.05)
+parser.add_argument('--recover', action='store_true')
+parser.add_argument('--lr', type=float, default=0.001)
+parser.add_argument('--start_sample', type=int, default=0)
+
+
+args = parser.parse_args()
+params = {
+        'batch_size': 50,
+        # 'epochs': 100000,
+        'epochs': 5000000,
+        'path': "unified_27_",
+        'rec_path': "unified_27_",
+        'recover': False,
+        'learning rate': 0.01,
+        'nodes per group': 3,
+        'number of nodes in the cluster': 27,
+        'replay size': 100,
+        'container_limitation per node': 8
+}
+
+params['NUM_CONTAINERS_start'] = args.start_sample
+params['path'] += str(args.start_sample)
+params['rec_path'] += str(args.start_sample)
+
+params['batch_size'] = args.batch_size_tunning
+params['epochs'] = args.epochs
+params['clip_eps'] = args.clip_eps
+params['safety_requirement'] = args.safety_requirement
+params['recover'] = args.recover
+params['learning rate'] = args.lr
 
 # np.random.seed(1)
 # tf.set_random_seed(1)
@@ -31,7 +69,7 @@ class PolicyGradient:
                  learning_rate=0.001,
                  suffix="",
                  safety_requirement=0.1,
-                 params=None,
+                 params=params,
                  idx=None):
 
         self.n_actions = n_actions
@@ -241,6 +279,7 @@ class PolicyGradient:
         self.ss_perapp_persisit.append(list_check_per_app)
         self.ss_coex_persisit.append(list_check_coex)
         self.ss_sum_persisit.append(list_check_sum)
+        self.safe_persisit.append(list_check)
 
     def learn_ppo (self, epoch_i, entropy_weight, IfPrint=False):
         discounted_ep_rs_norm = self._discount_and_norm_rewards()

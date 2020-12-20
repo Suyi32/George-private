@@ -3,7 +3,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbedlib.util.commons import *
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 # np.random.seed(1)
 # tf.set_random_seed(1)
@@ -194,6 +195,7 @@ class PolicyGradient:
         self.ss_perapp_persisit.append(list_check_per_app)
         self.ss_coex_persisit.append(list_check_coex)
         self.ss_sum_persisit.append(list_check_sum)
+        self.safe_persisit.append(list_check)
 
     def learn_vio (self, epoch_i, entropy_weight, IfPrint=False):
         discounted_ep_rs_norm = -self._discount_and_norm_safety()
