@@ -24,7 +24,7 @@ hyper_parameter = {
 
 params = {
         'batch_size': 20,
-        'epochs': 3000,
+        'epochs': 2000,
         'path': "pppo_729_fromscratch_" + str(hyper_parameter['container_N']) + "_" + str(hyper_parameter['batch_C_numbers']),
         'path_recover': "729_single_" + str(hyper_parameter['batch_C_numbers']),
         'recover': False,
