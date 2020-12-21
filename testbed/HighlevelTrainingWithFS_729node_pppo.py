@@ -84,7 +84,7 @@ def train(params):
     replay_size = params['replay size']
     training_times_per_episode = 1  # TODO: if layers changes, training_times_per_episode should be modified
     safety_requirement = 0.05#40
-    ifUseExternal = True
+    ifUseExternal = False
 
     """
     Build Network
