@@ -3,6 +3,7 @@ import time
 import os
 import sys
 sys.path.append("/Users/ourokutaira/Desktop/George")
+sys.path.append("../")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from testbed.cluster_env import LraClusterEnv
 from testbed.PolicyGradient_RL1 import PolicyGradient
