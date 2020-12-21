@@ -2,13 +2,14 @@ import numpy as np
 import time
 import os
 import sys
-sys.path.append("/Users/ourokutaira/Desktop/George")
+sys.path.append("/workspace/George-private")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from testbed.highlevel_env_pppo import LraClusterEnv
-from testbed.PolicyGradient_PPPO import PolicyGradient
+from testbedlib.highlevel_env_pppo import LraClusterEnv
+from testbedlib.PolicyGradient_PCPO_PPO import PolicyGradient
 import argparse
 import matplotlib.pyplot as plt
-
+from z3 import *
+import z3
 
 """
 '--batch_choice': 0, 1, 2, ``` 30
@@ -23,16 +24,16 @@ hyper_parameter = {
 
 params = {
         'batch_size': 20,
-        'epochs': 10000,
+        'epochs': 1000,
         'path': "pppo_729_fromscratch_" + str(hyper_parameter['container_N']) + "_" + str(hyper_parameter['batch_C_numbers']),
-        'path_recover': "cpo_clustering_729_pre_vio_new_1000",
+        'path_recover': "729_single_" + str(hyper_parameter['batch_C_numbers']),
         'recover': False,
         'number of containers': 2100,
-        'learning rate': 0.01,
+        'learning rate': 0.001,
         'nodes per group': 3,
         'number of nodes in the cluster': 27,  # 81
         'replay size': 50,
-        'container_limitation per node': 27*27*8   # 81
+        'container_limitation per node': 27*8   # 81
 }
 
 
@@ -82,8 +83,8 @@ def train(params):
     nodes_per_group = int(params['nodes per group'])
     replay_size = params['replay size']
     training_times_per_episode = 1  # TODO: if layers changes, training_times_per_episode should be modified
-    safety_requirement = 40
-    ifUseExternal = True
+    safety_requirement = 0.05#40
+    ifUseExternal = False
 
     """
     Build Network
@@ -134,6 +135,8 @@ def train(params):
     # TODO: delete this range
 
     names = locals()
+    for i in range(7):
+        names['x' + str(i)] = z3.IntVector('x' + str(i), 3)
     for i in range(0, 10):
         names['highest_tput_' + str(i)] = 0
 
@@ -165,6 +168,46 @@ def train(params):
     def store_episode_3(observations, actions):
         observation_episode_3.append(observations)
         action_episode_3.append(actions)
+
+    def handle_constraint(observation_now, appid_now):
+
+        observation_original = observation_now.copy()
+
+        mapping_index = []
+        list_check = []
+
+        t2 = time.time()
+        for place in range(3):
+            s.push()
+            s.add(names['x' + str(appid_now)][place] >= int(observation_now[place][appid_now]) + 1)
+
+            if s.check() == z3.sat:
+                list_check.append(False)
+            else:
+                list_check.append(True)
+            s.pop()
+
+        t3 = time.time()
+        # print("formulate: ", t2 - t1)
+        # print("calculate: ", t3 - t2)
+        good_index = np.where(np.array(list_check) == False)[0]
+        length = len(good_index)
+        if length < 1:
+            test = 1
+        index_replace = 0
+        for node in range(3):
+            if list_check[node]:  # bad node
+                # index_this_replace = good_index[np.random.randint(length)]
+                index_this_replace = good_index[index_replace % length]
+                index_replace += 1
+                observation_original[node] = observation[index_this_replace]
+                mapping_index.append(index_this_replace)
+            else:
+                mapping_index.append(node)
+                observation_original[node] = observation[node]
+
+        return observation_original, mapping_index
+
     source_batch_a, index_data_a = batch_data()  # index_data = [0,1,2,0,1,2]
 
     while epoch_i < params['epochs']:
@@ -187,13 +230,37 @@ def train(params):
         """
         first layer
         """
+        total = source_batch
+        limit = (1 * 9 * 27)
+        capicity = (8 * 9 * 27)  # 3
+        s = Solver()
+        # app sum == batch
+        for i in range(7):
+            s.add(z3.Sum(names['x' + str(i)]) == int(total[i]))
+        # node capacity
+        for node in range(3):
+            s.add(z3.Sum([names['x' + str(i)][node] for i in range(7)]) <= int(capicity))
+        # >=0
+        for i in range(7):
+            for node in range(3):
+                s.add(names['x' + str(i)][node] >= 0)
+        # per app spread
+        for i in range(7):
+            for node in range(3):
+                s.add(names['x' + str(i)][node] <= limit)
+        # App1 and App2 not exist
+        for node in range(3):
+            s.add(names['x' + str(1)][node] + names['x' + str(2)][node] <= limit)
+
         source_batch_first = source_batch_.copy()
         observation_first_layer = np.zeros([nodes_per_group, env.NUM_APPS], int)
         for inter_episode_index in range(NUM_CONTAINERS):
 
             appid = index_data[inter_episode_index]
+            observation_first_layer_copy, mapping_index = handle_constraint(observation_first_layer, appid)
+            assert len(mapping_index) > 0
             source_batch_first[appid] -= 1
-            observation_first_layer_copy = observation_first_layer.copy()
+            # observation_first_layer_copy = observation_first_layer.copy()
             observation_first_layer_copy[:, appid] += 1
 
             observation_first_layer_copy = np.append(observation_first_layer_copy, observation_first_layer_copy > 9 * node_limit_coex, axis=1)
@@ -208,9 +275,13 @@ def train(params):
             else:
                 action_1, prob_weights = RL_1.choose_action(observation_first_layer_copy.copy())
 
-            observation_first_layer[action_1, appid] += 1
+            decision = mapping_index[action_1]
+            observation_first_layer[decision, appid] += 1
+            s.add(names['x' + str(appid)][decision] >= int(observation_first_layer[decision][appid]))
 
             store_episode_1(observation_first_layer_copy, action_1)
+        assert (np.sum(observation_first_layer, axis=1) <= params['container_limitation per node'] * 9).all()
+        assert sum(sum(observation_first_layer)) == NUM_CONTAINERS
 
         """
         second layer
@@ -222,6 +293,28 @@ def train(params):
         for second_layer_index in range(nodes_per_group):
 
             rnd_array = observation_first_layer[second_layer_index].copy()
+            total = rnd_array
+            limit = (1 * 3 *27)
+            capicity = (8 * 3*27)  # 3
+            s = Solver()
+            # app sum == batch
+            for i in range(7):
+                s.add(z3.Sum(names['x' + str(i)]) == int(total[i]))
+            # node capacity
+            for node in range(3):
+                s.add(z3.Sum([names['x' + str(i)][node] for i in range(7)]) <= int(capicity))
+            # >=0
+            for i in range(7):
+                for node in range(3):
+                    s.add(names['x' + str(i)][node] >= 0)
+            # per app spread
+            for i in range(7):
+                for node in range(3):
+                    s.add(names['x' + str(i)][node] <= limit)
+            # App1 and App2 not exist
+            for node in range(3):
+                s.add(names['x' + str(1)][node] + names['x' + str(2)][node] <= limit)
+
             source_batch_second, index_data = batch_data_sub(rnd_array)
 
             observation_second_layer = np.zeros([nodes_per_group, env.NUM_APPS], int)
@@ -233,8 +326,10 @@ def train(params):
             for inter_episode_index in range(NUM_CONTAINERS_second):
 
                 appid = index_data[inter_episode_index]
+                observation_second_layer_copy, mapping_index = handle_constraint(observation_second_layer, appid)
+                assert len(mapping_index) > 0
                 source_batch_second[appid] -= 1
-                observation_second_layer_copy = observation_second_layer.copy()
+                # observation_second_layer_copy = observation_second_layer.copy()
                 observation_second_layer_copy[:, appid] += 1
 
                 observation_second_layer_copy = np.append(observation_second_layer_copy, observation_second_layer_copy > 3 * node_limit_coex, axis=1)
@@ -249,10 +344,12 @@ def train(params):
                 else:
                     action_2, prob_weights = RL_2.choose_action(observation_second_layer_copy.copy())
 
-                observation_second_layer[action_2, appid] += 1
-
+                decision = mapping_index[action_2]
+                observation_second_layer[decision, appid] += 1
+                s.add(names['x' + str(appid)][decision] >= int(observation_second_layer[decision][appid]))
                 store_episode_2(observation_second_layer_copy, action_2)
-
+            assert (np.sum(observation_second_layer, axis=1) <= params['container_limitation per node'] * 3).all()
+            assert sum(sum(observation_second_layer)) == NUM_CONTAINERS_second
             observation_second_layer_aggregation = np.append(observation_second_layer_aggregation, observation_second_layer, 0)
 
         """
@@ -264,6 +361,28 @@ def train(params):
         for third_layer_index in range(nodes_per_group * nodes_per_group):
 
             rnd_array = observation_second_layer_aggregation[third_layer_index].copy()
+            total = rnd_array
+            limit = (1 * 1 *27)
+            capicity = 8 *27
+            s = Solver()
+            # app sum == batch
+            for i in range(7):
+                s.add(z3.Sum(names['x' + str(i)]) == int(total[i]))
+            # node capacity
+            for node in range(3):
+                s.add(z3.Sum([names['x' + str(i)][node] for i in range(7)]) <= int(capicity))
+            # >=0
+            for i in range(7):
+                for node in range(3):
+                    s.add(names['x' + str(i)][node] >= 0)
+            # per app spread
+            for i in range(7):
+                for node in range(3):
+                    s.add(names['x' + str(i)][node] <= limit)
+            # App1 and App2 not exist
+            for node in range(3):
+                s.add(names['x' + str(1)][node] + names['x' + str(2)][node] <= limit)
+
             source_batch_third, index_data = batch_data_sub(rnd_array)
 
             observation_third_layer = np.zeros([nodes_per_group, env.NUM_APPS], int)
@@ -273,8 +392,10 @@ def train(params):
 
             for inter_episode_index in range(NUM_CONTAINERS_third):
                 appid = index_data[inter_episode_index]
+                observation_third_layer_copy, mapping_index = handle_constraint(observation_third_layer, appid)
+                assert len(mapping_index) > 0
                 source_batch_third[appid] -= 1
-                observation_third_layer_copy = observation_third_layer.copy()
+                # observation_third_layer_copy = observation_third_layer.copy()
                 observation_third_layer_copy[:, appid] += 1
 
                 observation_third_layer_copy = np.append(observation_third_layer_copy, observation_third_layer_copy > 1 * node_limit_coex, axis=1)
@@ -291,12 +412,15 @@ def train(params):
 
                     action_3, prob_weights = RL_3.choose_action(observation_third_layer_copy.copy())
 
-                observation_third_layer[action_3, appid] += 1
+                decision = mapping_index[action_3]
+                observation_third_layer[decision, appid] += 1
+                s.add(names['x' + str(appid)][decision] >= int(observation_third_layer[decision][appid]))
 
                 store_episode_3(observation_third_layer_copy, action_3)
 
             observation_third_layer_aggregation = np.append(observation_third_layer_aggregation, observation_third_layer, 0)
-
+            assert (np.sum(observation_third_layer, axis=1) <= params['container_limitation per node'] * 1).all()
+            assert sum(sum(observation_third_layer)) == NUM_CONTAINERS_third
         """
         After an entire allocation, calculate total throughput, reward
         """
@@ -307,6 +431,7 @@ def train(params):
         total_tput, list_check_sum, list_check_coex, list_check_per_app, list_check = env.get_tput_total_env()
 
         tput = total_tput/NUM_CONTAINERS
+        list_check = 1.0 * list_check / NUM_CONTAINERS
         reward_ratio = tput
 
         list_check_ratio = list_check
@@ -456,7 +581,7 @@ def train(params):
         """
         checkpoint, per 1000 episodes
         """
-        if (epoch_i % 2000 == 0) & (epoch_i > 1):
+        if (epoch_i % 200 == 0) & (epoch_i > 1):
             for class_replay in range(0,10):
                 highest_value = names['highest_tput_' + str(class_replay)]
                 print("\n epoch: %d, highest tput: %f" % (epoch_i, highest_value))
@@ -467,8 +592,8 @@ def train(params):
             RL_1.save_session(ckpt_path_1)
             RL_2.save_session(ckpt_path_2)
             RL_3.save_session(ckpt_path_3)
-            np.savez(np_path, tputs=np.array(RL_1.tput_persisit), candidate=np.array(RL_1.episode), vi_coex=np.array(RL_1.coex_persisit), vio_sum=np.array(RL_1.sum_persisit), time=np.array(RL_1.time_ersist), vio_persis=np.array(RL_1.safe_persisit))
-            print("epoch:", epoch_i, "mean(sum): ", np.mean(RL_1.sum_persisit[-500:]), "mean(coex): ", np.mean(RL_1.coex_persisit[-500:]))
+            np.savez(np_path, tputs=np.array(RL_1.tput_persisit), candidate=np.array(RL_1.episode), vio_persis=np.array(RL_1.safe_persisit))
+            print("epoch:", epoch_i, "mean(sum): ", np.mean(RL_1.sum_persisit), "mean(coex): ", np.mean(RL_1.coex_persisit))
             """
             optimal range adaptively change
             """
@@ -579,12 +704,12 @@ def make_path(dirname):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_choice', type=int)
-    parser.add_argument('--container_N', type=int)
+    parser.add_argument('--batch_choice', type=int, default=0)
+    parser.add_argument('--container_N', type=int, default=2000)
     args = parser.parse_args()
     hyper_parameter['batch_C_numbers'] = args.batch_choice
     hyper_parameter['container_N'] = args.container_N
-    params['path'] = "pppo_729_fromscratch_" + str(hyper_parameter['container_N']) + "_" + str(hyper_parameter['batch_C_numbers'])
+    params['path'] = "729_single_" + str(hyper_parameter['batch_C_numbers'])
     make_path(params['path'])
     train(params)
     draw_graph_single(params)

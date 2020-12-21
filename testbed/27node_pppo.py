@@ -718,7 +718,7 @@ def plot():
     args = parser.parse_args()
     choice = args.batch_choice
 
-    plot_meta("pppo1006_27_" + str(choice), "Throughput PPPO")
+    plot_meta("729_single_" + str(0), "Throughput PPPO")
     # plot_meta("60C_basic_limit10_128128", "Throughput Policy Gradient", plot_violation=False)
     plt.legend(loc='best')
     plt.xlabel("episode")
@@ -762,7 +762,7 @@ def plot_meta(name, label_name, plot_violation=True):
     #     plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_smooth / window_size, '.', label="Violation CPO")
     if plot_violation:
         plt.subplot(212)
-        vio_coex = npzfile['vi_sum'] + npzfile['vi_coex'] + npzfile['vi_perapp']
+        vio_coex = npzfile['vio_persis'] #+ npzfile['vi_coex'] + npzfile['vi_perapp']
         vio_coex_smooth = np.convolve(vio_coex, np.ones(window_size, dtype=int), 'valid')
         plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_coex_smooth / window_size, '.', label="Violtion (sum)")
 
@@ -774,7 +774,22 @@ def plot_meta(name, label_name, plot_violation=True):
         # vio_perapp_smooth = np.convolve(vio_perapp, np.ones(window_size, dtype=int), 'valid')
         # plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_perapp_smooth / window_size, '.', label="Violtion (co-exist)")
 
+def data_generate():
+    npzfile = np.load("data/batch_set_cpo_27node_100.npz")
+    batch_set = npzfile['arr_0']
+    batch_set_1000 = batch_set *10
+    batch_set_1500 = batch_set * 15
+    batch_set_2000 = batch_set * 20
+    batch_set_200 = batch_set * 2
+    batch_set_300 = batch_set * 3
+    np.savez("data/batch_set_cpo_27node_1000.npz", batch_set=batch_set_1000)
+    np.savez("data/batch_set_cpo_27node_1500.npz", batch_set=batch_set_1500)
+    np.savez("data/batch_set_cpo_27node_2000.npz", batch_set=batch_set_2000)
+    np.savez("data/batch_set_cpo_27node_200.npz", batch_set=batch_set_200)
+    np.savez("data/batch_set_cpo_27node_300.npz", batch_set=batch_set_300)
+
 
 if __name__ == "__main__":
-    main()
-    # plot()
+    # main()
+    plot()
+    # data_generate()
