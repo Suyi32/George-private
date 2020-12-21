@@ -27,7 +27,7 @@ hyper_parameter = {
     'batch_C_numbers': None
 }
 params = {
-    'batch_size': 20,
+    'batch_size': 50,
     # 'epochs': 100000,
     'epochs': 80000,
     'path': "pppo_27_" + str(hyper_parameter['batch_C_numbers']),
@@ -462,6 +462,7 @@ def train(params):
         assert (env.state.sum(0) == source_batch_).all()
         tput_state = env.state
         tput_breakdown = sim.predict(tput_state.reshape(-1, env.NUM_APPS))
+        tput_breakdown = tput_breakdown>0.8
         tput = (tput_breakdown * tput_state).sum() / NUM_CONTAINERS
         reward_ratio = (tput - 0)
 
