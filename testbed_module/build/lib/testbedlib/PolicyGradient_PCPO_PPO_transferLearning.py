@@ -164,7 +164,7 @@ class PolicyGradient:
                                        bias_initializer=tf.constant_initializer(0.1), name='fc22' + self.suffix)
 
             print("kernel_initializer: random_initializer")
-            self.trainable_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Actor'+self.suffix)
+            self.trainable_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='Actor'+self.suffix+'/fc22')
             self.trainable_variables_shapes = [var.get_shape().as_list() for var in self.trainable_variables]
             print("trainable_variables_shapes", self.trainable_variables_shapes)
 
