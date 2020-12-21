@@ -24,12 +24,12 @@ hyper_parameter = {
 
 params = {
         'batch_size': 20,
-        'epochs': 2000,
+        'epochs': 1000,
         'path': "729_tl_" + str(hyper_parameter['batch_C_numbers']),
         'path_recover': "transfer_2",
         'recover': True,
         'number of containers': 2100,
-        'learning rate': 0.01,
+        'learning rate': 0.001,
         'nodes per group': 3,
         'number of nodes in the cluster': 27,  # 81
         'replay size': 50,

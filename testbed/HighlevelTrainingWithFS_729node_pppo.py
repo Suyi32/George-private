@@ -24,12 +24,12 @@ hyper_parameter = {
 
 params = {
         'batch_size': 20,
-        'epochs': 2000,
+        'epochs': 1000,
         'path': "pppo_729_fromscratch_" + str(hyper_parameter['container_N']) + "_" + str(hyper_parameter['batch_C_numbers']),
         'path_recover': "729_single_" + str(hyper_parameter['batch_C_numbers']),
         'recover': False,
         'number of containers': 2100,
-        'learning rate': 0.01,
+        'learning rate': 0.001,
         'nodes per group': 3,
         'number of nodes in the cluster': 27,  # 81
         'replay size': 50,

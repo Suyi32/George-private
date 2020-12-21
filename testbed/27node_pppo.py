@@ -718,7 +718,7 @@ def plot():
     args = parser.parse_args()
     choice = args.batch_choice
 
-    plot_meta("unified_27_" + str(70), "Throughput PPPO")
+    plot_meta("729_single_" + str(0), "Throughput PPPO")
     # plot_meta("60C_basic_limit10_128128", "Throughput Policy Gradient", plot_violation=False)
     plt.legend(loc='best')
     plt.xlabel("episode")
@@ -762,7 +762,7 @@ def plot_meta(name, label_name, plot_violation=True):
     #     plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_smooth / window_size, '.', label="Violation CPO")
     if plot_violation:
         plt.subplot(212)
-        vio_coex = npzfile['vi_sum'] + npzfile['vi_coex'] + npzfile['vi_perapp']
+        vio_coex = npzfile['vio_persis'] #+ npzfile['vi_coex'] + npzfile['vi_perapp']
         vio_coex_smooth = np.convolve(vio_coex, np.ones(window_size, dtype=int), 'valid')
         plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_coex_smooth / window_size, '.', label="Violtion (sum)")
 
@@ -791,5 +791,5 @@ def data_generate():
 
 if __name__ == "__main__":
     # main()
-    # plot()
-    data_generate()
+    plot()
+    # data_generate()
