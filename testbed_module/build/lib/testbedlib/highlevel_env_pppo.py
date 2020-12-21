@@ -11,7 +11,14 @@ Environment
 import numpy as np
 from testbedlib.SubScheduler_pppo import NineNodeAPI
 from testbedlib.simulator.simulator import Simulator
-
+app_node_set = np.array([
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+     [2, 3, 5, 6, 7, 11, 12, 18, 20, 22, 23, 24, 25, 26],
+     [0, 2, 8, 9, 19, 23, 24, 25, 26],
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]])
 class LraClusterEnv():
 
     def __init__(self, num_nodes):
@@ -120,10 +127,22 @@ class LraClusterEnv():
         # list_check_coex = sum((state[:, 1] > 0) * (state[:, 2] > 0))
         # list_check = list_check_sum + list_check_coex + list_check_per_app
         list_check = 0
+        # for node in range(self.NUM_NODES * 27):
+        #     for app in range(self.NUM_APPS):
+        #         if state[node, :].sum() > 8 or state[node, app] > 1 or (app == 1 and state[node, 2] > 0) or (app == 2 and state[node, 1] > 0):
+        #             list_check += state[node, app]
+
+        # container limitation & deployment spread
         for node in range(self.NUM_NODES * 27):
             for app in range(self.NUM_APPS):
-                if state[node, :].sum() > 8 or state[node, app] > 1 or (app == 1 and state[node, 2] > 0) or (app == 2 and state[node, 1] > 0):
+                if state[node, :].sum() > 8:  # or env.state[node, app] > 1:
                     list_check += state[node, app]
+        # hardware affinity & increamental deployment
+        for app in range(7):
+            node_now = np.where(state[:, app] > 0)[0]
+            for node_ in node_now:
+                if node_%27 not in app_node_set[app]:
+                    list_check += state[node_, app]
 
         return total_tput, 0, 0, 0, list_check
 
