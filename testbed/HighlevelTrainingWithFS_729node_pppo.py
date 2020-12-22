@@ -84,7 +84,7 @@ def train(params):
     replay_size = params['replay size']
     training_times_per_episode = 1  # TODO: if layers changes, training_times_per_episode should be modified
     safety_requirement = 0.05#40
-    ifUseExternal = False
+    ifUseExternal = True
 
     """
     Build Network
@@ -704,7 +704,7 @@ def make_path(dirname):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_choice', type=int, default=0)
+    parser.add_argument('--batch_choice', type=int, default=1)
     parser.add_argument('--container_N', type=int, default=2000)
     args = parser.parse_args()
     hyper_parameter['batch_C_numbers'] = args.batch_choice

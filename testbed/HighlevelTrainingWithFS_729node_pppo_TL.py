@@ -704,7 +704,7 @@ def make_path(dirname):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_choice', type=int, default=0)
+    parser.add_argument('--batch_choice', type=int, default=1)
     parser.add_argument('--container_N', type=int, default=2000)
     args = parser.parse_args()
     hyper_parameter['batch_C_numbers'] = args.batch_choice
