@@ -461,7 +461,7 @@ def train(params):
         """
         check_tput_quality(tput)
         """
-        if list_check <= safety_requirement*0.8:
+        if list_check <= safety_requirement:
             if names['highest_tput_' + str(tput_origimal_class)] < tput:
                 names['highest_tput_' + str(tput_origimal_class)] = tput
 
