@@ -24,7 +24,7 @@ hyper_parameter = {
 
 params = {
         'batch_size': 20,
-        'epochs': 1000,
+        'epochs': 2000,
         'path': "729_tl_" + str(hyper_parameter['batch_C_numbers']),
         'path_recover': "transfer_2",
         'recover': True,
