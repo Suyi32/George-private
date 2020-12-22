@@ -83,7 +83,7 @@ def train(params):
     nodes_per_group = int(params['nodes per group'])
     replay_size = params['replay size']
     training_times_per_episode = 1  # TODO: if layers changes, training_times_per_episode should be modified
-    safety_requirement = 0.1#40
+    safety_requirement = 0.05#40
     ifUseExternal = True
 
     """
