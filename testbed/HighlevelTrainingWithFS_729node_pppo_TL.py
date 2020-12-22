@@ -24,7 +24,7 @@ hyper_parameter = {
 
 params = {
         'batch_size': 20,
-        'epochs': 1000,
+        'epochs': 5000,
         'path': "729_tl_" + str(hyper_parameter['batch_C_numbers']),
         'path_recover': "transfer_2",
         'recover': True,
@@ -83,7 +83,7 @@ def train(params):
     nodes_per_group = int(params['nodes per group'])
     replay_size = params['replay size']
     training_times_per_episode = 1  # TODO: if layers changes, training_times_per_episode should be modified
-    safety_requirement = 0.1#40
+    safety_requirement = 0.05#40
     ifUseExternal = True
 
     """
@@ -461,7 +461,7 @@ def train(params):
         """
         check_tput_quality(tput)
         """
-        if list_check <= safety_requirement*0.8:
+        if list_check <= safety_requirement:
             if names['highest_tput_' + str(tput_origimal_class)] < tput:
                 names['highest_tput_' + str(tput_origimal_class)] = tput
 
@@ -704,7 +704,7 @@ def make_path(dirname):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_choice', type=int, default=0)
+    parser.add_argument('--batch_choice', type=int, default=1)
     parser.add_argument('--container_N', type=int, default=2000)
     args = parser.parse_args()
     hyper_parameter['batch_C_numbers'] = args.batch_choice
