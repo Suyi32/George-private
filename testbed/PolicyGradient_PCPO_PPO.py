@@ -232,7 +232,7 @@ class PolicyGradient:
         self.safe_batch.append(list_check)
         self.ss_perapp_persisit.append(list_check_per_app)
         self.ss_coex_persisit.append(list_check_coex)
-        self.ss_sum_persisit.append(list_check_sum)
+        self.ss_sum_persisit.append(list_check)
 
     def learn_ppo (self, epoch_i, entropy_weight, IfPrint=False):
         discounted_ep_rs_norm = self._discount_and_norm_rewards()

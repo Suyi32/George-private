@@ -729,11 +729,14 @@ def plot():
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+    a=1
     # plt.savefig("./Constraint: sum(node) and app#1,2 no co-exist" + ".pdf", format='pdf', dpi=2400, transparent=True)
 
 
 def plot_meta(name, label_name, plot_violation=True):
-    np_path = "./checkpoint/" + name + "/optimal_file_name.npz"
+    plt.figure(figsize=(20, 15))
+
+    np_path = "./checkpoint/" + "secondobj_fpo_0.01_0" + "/optimal_file_name.npz"
     npzfile = np.load(np_path)
 
     tput = npzfile['tputs']  # [0:50000] * 1.05
@@ -762,7 +765,7 @@ def plot_meta(name, label_name, plot_violation=True):
     #     plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_smooth / window_size, '.', label="Violation CPO")
     if plot_violation:
         plt.subplot(212)
-        vio_coex = npzfile['vio_persis'] #+ npzfile['vi_coex'] + npzfile['vi_perapp']
+        vio_coex = npzfile['vi_sum'] #+ npzfile['vi_coex'] + npzfile['vi_perapp']
         vio_coex_smooth = np.convolve(vio_coex, np.ones(window_size, dtype=int), 'valid')
         plt.plot(1.0 * epoch_smooth / window_size, 1.0 * vio_coex_smooth / window_size, '.', label="Violtion (sum)")
 
